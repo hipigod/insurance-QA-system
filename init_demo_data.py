@@ -3,6 +3,12 @@
 用于快速填充客户角色、保险产品和评分维度数据
 """
 import asyncio
+import sys
+import os
+
+# 添加backend目录到Python路径
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'backend'))
+
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import AsyncSessionLocal, init_db
 from app.models.models import CustomerRole, InsuranceProduct, ScoringDimension

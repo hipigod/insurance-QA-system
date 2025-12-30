@@ -317,7 +317,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus, Download, Upload } from '@element-plus/icons-vue'
-import api from '@/api/modules'
+import * as api from '@/api/modules'
 
 const router = useRouter()
 

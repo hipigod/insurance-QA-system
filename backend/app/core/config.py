@@ -1,8 +1,15 @@
 """
 应用配置管理
 """
+import os
+from pathlib import Path
+from typing import ClassVar
 from pydantic_settings import BaseSettings
 from typing import Optional
+
+
+# 获取backend目录的绝对路径
+BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
 
 class Settings(BaseSettings):
@@ -17,8 +24,8 @@ class Settings(BaseSettings):
     HOST: str = "127.0.0.1"
     PORT: int = 8000
 
-    # 数据库配置
-    DATABASE_URL: str = "sqlite+aiosqlite://./data/insurance_practice.db"
+    # 数据库配置 - 使用绝对路径
+    DATABASE_URL: str = f"sqlite+aiosqlite:///{BASE_DIR}/data/insurance_practice.db"
 
     # AI模型配置
     DEFAULT_MODEL: str = "qwen-plus"  # 默认使用通义千问

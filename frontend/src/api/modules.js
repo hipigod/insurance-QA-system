@@ -94,3 +94,29 @@ export const startDialogue = (data) => {
 export const submitScore = (data) => {
   return api.post('/dialogue/score', data)
 }
+
+// ============ 模型配置管理 ============
+// 获取所有模型配置
+export const getModels = () => {
+  return api.get('/models/')
+}
+
+// 创建模型配置
+export const createModel = (data) => {
+  return api.post('/models/', data)
+}
+
+// 更新模型配置
+export const updateModel = (id, data) => {
+  return api.put(`/models/${id}`, data)
+}
+
+// 删除模型配置
+export const deleteModel = (id) => {
+  return api.delete(`/models/${id}`)
+}
+
+// 激活模型
+export const activateModel = (id) => {
+  return api.post(`/models/${id}/activate`)
+}
