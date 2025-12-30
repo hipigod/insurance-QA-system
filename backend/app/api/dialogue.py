@@ -5,7 +5,7 @@ import json
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-from app.core.database import get_db
+from app.core.database import get_db, AsyncSessionLocal
 from app.models.models import CustomerRole, InsuranceProduct, ScoringDimension, ExcellentCase
 from app.models.schemas import DialogueStartRequest, ScoringRequest
 from app.services.ai_service import get_ai_service
@@ -173,26 +173,21 @@ async def websocket_dialogue(websocket: WebSocket, session_id: str):
                 try:
                     ai_service = get_ai_service()
 
-                    # 获取评分维度配置
-                    # 这里使用默认配置，后续可以从数据库获取
-                    scoring_dimensions = {
-                        "沟通能力": {
-                            "weight": 25,
-                            "prompt": "评估语言表达、倾听能力、共情能力"
-                        },
-                        "有效营销": {
-                            "weight": 25,
-                            "prompt": "评估需求挖掘、价值传递、异议处理"
-                        },
-                        "产品熟练度": {
-                            "weight": 25,
-                            "prompt": "评估产品知识准确性、条款解释能力"
-                        },
-                        "异议处理能力": {
-                            "weight": 25,
-                            "prompt": "评估异议识别和应对能力"
-                        }
-                    }
+                    # 从数据库获取评分维度配置
+                    db = AsyncSessionLocal()
+                    try:
+                        dimensions_result = await db.execute(select(ScoringDimension))
+                        dimensions = dimensions_result.scalars().all()
+
+                        # 构建评分维度配置
+                        scoring_dimensions = {}
+                        for dim in dimensions:
+                            scoring_dimensions[dim.name] = {
+                                "weight": dim.weight,
+                                "prompt": dim.evaluation_prompt or dim.description
+                            }
+                    finally:
+                        await db.close()
 
                     # 构建对话文本
                     dialogue_text = "\n".join([
