@@ -44,7 +44,7 @@ app.include_router(products.router, prefix="/api")
 app.include_router(dialogue.router, prefix="/api")
 app.include_router(dimensions.router, prefix="/api")
 app.include_router(cases.router, prefix="/api")
-app.include_router(models.router, prefix="/api/models", tags=["models"])
+app.include_router(models.router, prefix="/api", tags=["models"])
 
 
 # 根路径
