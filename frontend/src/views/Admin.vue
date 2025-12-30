@@ -170,6 +170,43 @@
             </el-upload>
           </el-card>
         </el-tab-pane>
+
+        <!-- 模型配置管理 -->
+        <el-tab-pane label="模型配置管理" name="models">
+          <div class="tab-header">
+            <el-button type="primary" @click="showModelDialog()">
+              <el-icon><Plus /></el-icon>
+              新增模型
+            </el-button>
+          </div>
+
+          <el-table :data="models" style="width: 100%" v-loading="loading">
+            <el-table-column prop="id" label="ID" width="60" />
+            <el-table-column prop="model_name" label="模型名称" width="200" />
+            <el-table-column prop="provider" label="提供商" width="150" />
+            <el-table-column prop="api_base" label="API地址" show-overflow-tooltip />
+            <el-table-column label="状态" width="100">
+              <template #default="{ row }">
+                <el-tag :type="row.is_active ? 'success' : 'info'">
+                  {{ row.is_active ? '启用' : '禁用' }}
+                </el-tag>
+              </template>
+            </el-table-column>
+            <el-table-column label="操作" width="220" fixed="right">
+              <template #default="{ row }">
+                <el-button size="small" @click="showModelDialog(row)">编辑</el-button>
+                <el-button
+                  size="small"
+                  :type="row.is_active ? 'warning' : 'success'"
+                  @click="toggleModelActive(row)"
+                >
+                  {{ row.is_active ? '禁用' : '启用' }}
+                </el-button>
+                <el-button size="small" type="danger" @click="deleteModel(row.id)">删除</el-button>
+              </template>
+            </el-table-column>
+          </el-table>
+        </el-tab-pane>
       </el-tabs>
     </el-main>
 
@@ -309,6 +346,35 @@
         <el-button type="primary" @click="saveCase" :loading="saving">保存</el-button>
       </template>
     </el-dialog>
+
+    <!-- 模型配置对话框 -->
+    <el-dialog
+      v-model="modelDialogVisible"
+      :title="modelForm.id ? '编辑模型' : '新增模型'"
+      width="600px"
+    >
+      <el-form :model="modelForm" label-width="100px">
+        <el-form-item label="模型名称">
+          <el-input v-model="modelForm.model_name" placeholder="例如: 通义千问" />
+        </el-form-item>
+        <el-form-item label="提供商">
+          <el-input v-model="modelForm.provider" placeholder="例如: 阿里云" />
+        </el-form-item>
+        <el-form-item label="API Key">
+          <el-input v-model="modelForm.api_key" type="password" placeholder="请输入API Key" show-password />
+        </el-form-item>
+        <el-form-item label="API地址">
+          <el-input v-model="modelForm.api_base" placeholder="例如: https://dashscope.aliyuncs.com/compatible-mode/v1" />
+        </el-form-item>
+        <el-form-item label="状态">
+          <el-switch v-model="modelForm.is_active" active-text="启用" inactive-text="禁用" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="modelDialogVisible = false">取消</el-button>
+        <el-button type="primary" @click="saveModel" :loading="saving">保存</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -329,18 +395,21 @@ const roles = ref([])
 const products = ref([])
 const dimensions = ref([])
 const cases = ref([])
+const models = ref([])
 
 // 对话框状态
 const roleDialogVisible = ref(false)
 const productDialogVisible = ref(false)
 const dimensionDialogVisible = ref(false)
 const caseDialogVisible = ref(false)
+const modelDialogVisible = ref(false)
 
 // 表单数据
 const roleForm = ref({})
 const productForm = ref({})
 const dimensionForm = ref({})
 const caseForm = ref({})
+const modelForm = ref({})
 
 // 计算总权重
 const totalWeight = computed(() => {
@@ -684,12 +753,91 @@ const importData = (file) => {
   reader.readAsText(file.raw)
 }
 
+// 模型管理方法
+const loadModels = async () => {
+  try {
+    const response = await api.getModels()
+    models.value = response.data || []
+  } catch (error) {
+    console.error('加载模型失败:', error)
+    ElMessage.error('加载模型失败')
+  }
+}
+
+const showModelDialog = (model = null) => {
+  if (model) {
+    modelForm.value = { ...model }
+  } else {
+    modelForm.value = {
+      model_name: '',
+      provider: '',
+      api_key: '',
+      api_base: '',
+      is_active: true
+    }
+  }
+  modelDialogVisible.value = true
+}
+
+const saveModel = async () => {
+  try {
+    saving.value = true
+
+    if (modelForm.value.id) {
+      await api.updateModel(modelForm.value.id, modelForm.value)
+      ElMessage.success('更新成功')
+    } else {
+      await api.createModel(modelForm.value)
+      ElMessage.success('创建成功')
+    }
+
+    modelDialogVisible.value = false
+    await loadModels()
+  } catch (error) {
+    console.error('保存模型失败:', error)
+    ElMessage.error(error.response?.data?.detail || '保存失败')
+  } finally {
+    saving.value = false
+  }
+}
+
+const deleteModel = async (id) => {
+  try {
+    await ElMessageBox.confirm('确定要删除这个模型配置吗?', '提示', {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'warning'
+    })
+
+    await api.deleteModel(id)
+    ElMessage.success('删除成功')
+    await loadModels()
+  } catch (error) {
+    if (error !== 'cancel') {
+      console.error('删除模型失败:', error)
+      ElMessage.error('删除失败')
+    }
+  }
+}
+
+const toggleModelActive = async (model) => {
+  try {
+    await api.activateModel(model.id)
+    ElMessage.success(model.is_active ? '已禁用' : '已启用')
+    await loadModels()
+  } catch (error) {
+    console.error('切换状态失败:', error)
+    ElMessage.error('操作失败')
+  }
+}
+
 // 生命周期
 onMounted(() => {
   loadRoles()
   loadProducts()
   loadDimensions()
   loadCases()
+  loadModels()
 })
 </script>
 

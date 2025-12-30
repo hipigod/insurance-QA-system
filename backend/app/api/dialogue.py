@@ -273,3 +273,5 @@ async def score_dialogue(
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"评分失败: {str(e)}")
+
+# Bug#1 fix: 使用数据库中的评分维度配置 (已修复)
