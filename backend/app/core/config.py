@@ -21,9 +21,9 @@ class Settings(BaseSettings):
     DATABASE_URL: str = "sqlite+aiosqlite://./data/insurance_practice.db"
 
     # AI模型配置
-    DEFAULT_MODEL: str = "deepseek-chat"  # 默认使用DeepSeek
+    DEFAULT_MODEL: str = "qwen-plus"  # 默认使用通义千问
     MODEL_API_KEY: Optional[str] = None
-    MODEL_API_BASE: str = "https://api.deepseek.com/v1"
+    MODEL_API_BASE: str = "https://dashscope.aliyuncs.com/compatible-mode/v1"
 
     # 对话配置
     MAX_DIALOGUE_ROUNDS: int = 20

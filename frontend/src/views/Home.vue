@@ -82,11 +82,15 @@
         </p>
       </div>
 
-      <!-- 历史记录入口 -->
-      <div class="history-link">
-        <router-link to="/history">
+      <!-- 历史记录和管理入口 -->
+      <div class="footer-links">
+        <router-link to="/history" class="link-item">
           <el-icon><Clock /></el-icon>
           查看练习历史
+        </router-link>
+        <router-link to="/admin" class="link-item admin-link">
+          <el-icon><Setting /></el-icon>
+          管理后台
         </router-link>
       </div>
     </el-main>
@@ -299,18 +303,32 @@ onMounted(async () => {
   font-size: 14px;
 }
 
-.history-link {
+.footer-links {
   text-align: center;
   margin-top: 20px;
+  display: flex;
+  justify-content: center;
+  gap: 40px;
 }
 
-.history-link a {
+.link-item {
   color: white;
   text-decoration: none;
   display: inline-flex;
   align-items: center;
   gap: 6px;
   font-size: 14px;
+  transition: all 0.3s;
+}
+
+.link-item:hover {
+  opacity: 0.8;
+}
+
+.admin-link {
+  padding: 8px 16px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 20px;
 }
 
 /* 移动端适配 */

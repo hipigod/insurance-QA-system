@@ -5,7 +5,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
 from app.core.database import init_db
-from app.api import roles, products, dialogue
+from app.api import roles, products, dialogue, dimensions, cases
 
 # 创建应用实例
 app = FastAPI(
@@ -38,6 +38,8 @@ async def startup_event():
 app.include_router(roles.router, prefix="/api")
 app.include_router(products.router, prefix="/api")
 app.include_router(dialogue.router, prefix="/api")
+app.include_router(dimensions.router, prefix="/api")
+app.include_router(cases.router, prefix="/api")
 
 
 # 根路径

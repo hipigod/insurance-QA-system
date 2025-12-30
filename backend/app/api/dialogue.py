@@ -6,11 +6,10 @@ from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Depends, HTTPExce
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from app.core.database import get_db
-from app.models.models import CustomerRole, InsuranceProduct, PracticeRecord
-from app.models.schemas import DialogueStartRequest, ChatMessage, ScoringRequest
+from app.models.models import CustomerRole, InsuranceProduct, ScoringDimension, ExcellentCase
+from app.models.schemas import DialogueStartRequest, ScoringRequest
 from app.services.ai_service import get_ai_service
 from app.services.websocket_service import websocket_manager
-from typing import Dict
 
 router = APIRouter(prefix="/dialogue", tags=["对话"])
 
@@ -37,8 +36,30 @@ async def start_dialogue(
     if not product:
         raise HTTPException(status_code=404, detail="产品不存在")
 
-    # 创建会话
-    session = await websocket_manager.create_session(request.role_id, request.product_id)
+    # 构建角色和产品数据字典
+    role_data = {
+        "id": role.id,
+        "name": role.name,
+        "system_prompt": role.system_prompt
+    }
+
+    product_data = {
+        "id": product.id,
+        "name": product.name,
+        "description": product.description,
+        "coverage": product.coverage,
+        "premium_range": product.premium_range,
+        "target_audience": product.target_audience,
+        "detailed_info": product.detailed_info
+    }
+
+    # 创建会话并保存角色和产品数据
+    session = await websocket_manager.create_session(
+        request.role_id,
+        request.product_id,
+        role_data,
+        product_data
+    )
 
     # 构建产品信息文本
     product_info = f"""产品名称：{product.name}
@@ -108,15 +129,19 @@ async def websocket_dialogue(websocket: WebSocket, session_id: str):
                     "status": "thinking"
                 })
 
-                # 获取角色和产品信息
-                # TODO: 从数据库获取，这里暂时用缓存
+                # 获取角色和产品信息（从会话中获取）
+                role_prompt = session.role_data.get("system_prompt", "")
+                product_info = f"""产品名称：{session.product_data.get("name")}
+产品简介：{session.product_data.get("description")}
+保障范围：{session.product_data.get("coverage")}
+保费范围：{session.product_data.get("premium_range")}"""
 
                 # 生成AI回复
                 try:
                     ai_service = get_ai_service()
                     ai_reply = await ai_service.generate_dialogue_response(
-                        role_prompt="",  # TODO: 从缓存获取
-                        product_info="",  # TODO: 从缓存获取
+                        role_prompt=role_prompt,
+                        product_info=product_info,
                         dialogue_history=session.dialogue_history,
                         user_message=user_message
                     )
@@ -144,19 +169,65 @@ async def websocket_dialogue(websocket: WebSocket, session_id: str):
                     "status": "scoring"
                 })
 
-                # TODO: 调用评分服务
-                await websocket.send_json({
-                    "type": "score",
-                    "data": {
-                        "total_score": 85,
-                        "message": "评分完成"
+                # 调用评分服务
+                try:
+                    ai_service = get_ai_service()
+
+                    # 获取评分维度配置
+                    # 这里使用默认配置，后续可以从数据库获取
+                    scoring_dimensions = {
+                        "沟通能力": {
+                            "weight": 25,
+                            "prompt": "评估语言表达、倾听能力、共情能力"
+                        },
+                        "有效营销": {
+                            "weight": 25,
+                            "prompt": "评估需求挖掘、价值传递、异议处理"
+                        },
+                        "产品熟练度": {
+                            "weight": 25,
+                            "prompt": "评估产品知识准确性、条款解释能力"
+                        },
+                        "异议处理能力": {
+                            "weight": 25,
+                            "prompt": "评估异议识别和应对能力"
+                        }
                     }
-                })
+
+                    # 构建对话文本
+                    dialogue_text = "\n".join([
+                        f"{msg.role}: {msg.content}"
+                        for msg in session.dialogue_history
+                    ])
+
+                    # 调用AI评分
+                    score_result = await ai_service.generate_scoring(
+                        dialogue_text=dialogue_text,
+                        role_name=session.role_data.get("name", ""),
+                        product_name=session.product_data.get("name", ""),
+                        scoring_dimensions=scoring_dimensions,
+                        scoring_prompt=""
+                    )
+
+                    # 发送评分结果
+                    await websocket.send_json({
+                        "type": "score",
+                        "data": score_result
+                    })
+
+                except Exception as e:
+                    await websocket.send_json({
+                        "type": "error",
+                        "message": f"评分失败: {str(e)}"
+                    })
 
                 break
 
     except WebSocketDisconnect:
         print(f"WebSocket断开: {session_id}")
+    except Exception as e:
+        print(f"WebSocket错误: {str(e)}")
+        await websocket.close(code=4001, reason=f"服务器错误: {str(e)}")
     finally:
         websocket_manager.remove_session(session_id)
 
@@ -167,12 +238,19 @@ async def score_dialogue(
     db: AsyncSession = Depends(get_db)
 ):
     """
-    对话评分接口
+    对话评分接口 (HTTP方式，WebSocket失败时的备用方案)
     """
-    # 获取会话
-    session = websocket_manager.get_session(request.session_id)
-    if not session:
-        raise HTTPException(status_code=404, detail="会话不存在")
+    # 获取评分维度
+    dimensions_result = await db.execute(select(ScoringDimension))
+    dimensions = dimensions_result.scalars().all()
+
+    # 构建评分维度配置
+    scoring_dimensions = {}
+    for dim in dimensions:
+        scoring_dimensions[dim.name] = {
+            "weight": dim.weight,
+            "prompt": dim.evaluation_prompt or dim.description
+        }
 
     # 获取角色和产品信息
     role_result = await db.execute(select(CustomerRole).where(CustomerRole.id == request.role_id))
@@ -186,26 +264,15 @@ async def score_dialogue(
         f"{msg.role}: {msg.content}" for msg in request.dialogue_history
     ])
 
-    # 获取评分维度
-    # TODO: 从数据库获取评分维度配置
-
     try:
         ai_service = get_ai_service()
         score_result = await ai_service.generate_scoring(
             dialogue_text=dialogue_text,
             role_name=role.name if role else "",
             product_name=product.name if product else "",
-            scoring_dimensions={
-                "沟通能力": {"weight": 25, "prompt": "..."},
-                "有效营销": {"weight": 25, "prompt": "..."},
-                "产品熟练度": {"weight": 25, "prompt": "..."},
-                "异议处理能力": {"weight": 25, "prompt": "..."}
-            },
+            scoring_dimensions=scoring_dimensions,
             scoring_prompt=""
         )
-
-        # 保存练习记录
-        # TODO: 保存到数据库
 
         return score_result
 

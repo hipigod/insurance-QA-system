@@ -2,7 +2,7 @@
 WebSocket服务 - 管理对话会话
 """
 import uuid
-from typing import Dict, List
+from typing import Dict, List, Optional
 from datetime import datetime
 from app.models.schemas import ChatMessage
 
@@ -10,10 +10,18 @@ from app.models.schemas import ChatMessage
 class DialogueSession:
     """对话会话类"""
 
-    def __init__(self, role_id: int, product_id: int):
+    def __init__(
+        self,
+        role_id: int,
+        product_id: int,
+        role_data: dict = None,
+        product_data: dict = None
+    ):
         self.session_id = str(uuid.uuid4())
         self.role_id = role_id
         self.product_id = product_id
+        self.role_data = role_data or {}  # 存储角色完整信息
+        self.product_data = product_data or {}  # 存储产品完整信息
         self.dialogue_history: List[ChatMessage] = []
         self.created_at = datetime.now()
         self.is_active = True
@@ -38,13 +46,19 @@ class WebSocketManager:
         # 存储WebSocket连接: {session_id: websocket}
         self.active_connections: Dict[str, any] = {}
 
-    async def create_session(self, role_id: int, product_id: int) -> DialogueSession:
+    async def create_session(
+        self,
+        role_id: int,
+        product_id: int,
+        role_data: dict = None,
+        product_data: dict = None
+    ) -> DialogueSession:
         """创建新会话"""
-        session = DialogueSession(role_id, product_id)
+        session = DialogueSession(role_id, product_id, role_data, product_data)
         self.active_sessions[session.session_id] = session
         return session
 
-    def get_session(self, session_id: str) -> DialogueSession:
+    def get_session(self, session_id: str) -> Optional[DialogueSession]:
         """获取会话"""
         return self.active_sessions.get(session_id)
 
