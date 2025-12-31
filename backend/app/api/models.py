@@ -10,7 +10,7 @@ from app.core.database import get_db
 from app.models.models import ModelConfig
 from app.models.schemas import ModelConfigResponse, ModelConfigCreate, ModelConfigUpdate
 
-router = APIRouter()
+router = APIRouter(prefix="/models", tags=["模型配置"])
 
 
 @router.get("/", response_model=List[ModelConfigResponse])
