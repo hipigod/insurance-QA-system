@@ -164,6 +164,9 @@ async def websocket_dialogue(websocket: WebSocket, session_id: str):
 
             elif action == "end":
                 # 结束对话，触发评分
+                print(f"[DEBUG] 收到结束对话请求, session_id={session_id}")
+                print(f"[DEBUG] 对话轮数: {len(session.dialogue_history)}")
+
                 await websocket.send_json({
                     "type": "status",
                     "status": "scoring"
@@ -171,6 +174,7 @@ async def websocket_dialogue(websocket: WebSocket, session_id: str):
 
                 # 调用评分服务
                 try:
+                    print("[DEBUG] 开始AI评分流程...")
                     ai_service = get_ai_service()
 
                     # 从数据库获取评分维度配置
@@ -186,6 +190,7 @@ async def websocket_dialogue(websocket: WebSocket, session_id: str):
                                 "weight": dim.weight,
                                 "prompt": dim.evaluation_prompt or dim.description
                             }
+                        print(f"[DEBUG] 加载了{len(dimensions)}个评分维度")
                     finally:
                         await db.close()
 
@@ -194,8 +199,10 @@ async def websocket_dialogue(websocket: WebSocket, session_id: str):
                         f"{msg.role}: {msg.content}"
                         for msg in session.dialogue_history
                     ])
+                    print(f"[DEBUG] 对话文本长度: {len(dialogue_text)}字符")
 
                     # 调用AI评分
+                    print("[DEBUG] 调用AI评分服务...")
                     score_result = await ai_service.generate_scoring(
                         dialogue_text=dialogue_text,
                         role_name=session.role_data.get("name", ""),
@@ -204,13 +211,22 @@ async def websocket_dialogue(websocket: WebSocket, session_id: str):
                         scoring_prompt=""
                     )
 
+                    print(f"[DEBUG] AI评分完成, 总分: {score_result.get('total_score', 'N/A')}")
+                    print(f"[DEBUG] 发送评分结果到前端...")
+
                     # 发送评分结果
                     await websocket.send_json({
                         "type": "score",
                         "data": score_result
                     })
 
+                    print("[DEBUG] 评分结果已发送")
+
                 except Exception as e:
+                    print(f"[ERROR] 评分失败: {str(e)}")
+                    import traceback
+                    traceback.print_exc()
+
                     await websocket.send_json({
                         "type": "error",
                         "message": f"评分失败: {str(e)}"

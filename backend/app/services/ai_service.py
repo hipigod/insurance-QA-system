@@ -186,7 +186,7 @@ class AIService:
                     temperature=0.3,  # 评分时降低温度，提高稳定性
                     max_tokens=2000
                 ),
-                timeout=15
+                timeout=30  # 评分需要更多时间,增加到30秒
             )
 
             result_text = response.choices[0].message.content
