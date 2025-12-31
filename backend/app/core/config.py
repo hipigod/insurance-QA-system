@@ -23,6 +23,7 @@ class Settings(BaseSettings):
     # 服务器配置
     HOST: str = "127.0.0.1"
     PORT: int = 8000
+    RELOAD: bool = True  # 自动重载(开发模式)
 
     # 数据库配置 - 使用绝对路径
     DATABASE_URL: str = f"sqlite+aiosqlite:///{BASE_DIR}/data/insurance_practice.db"
