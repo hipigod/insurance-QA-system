@@ -207,7 +207,7 @@ const loadDimensions = async () => {
   try {
     loading.value = true
     const response = await api.getDimensions()
-    dimensions.value = response.data || []
+    dimensions.value = response || []
   } catch (error) {
     console.error('加载维度失败:', error)
     ElMessage.error('加载维度失败')
@@ -286,7 +286,7 @@ const loadCases = async () => {
   try {
     loading.value = true
     const response = await api.getCases()
-    cases.value = response.data || []
+    cases.value = response || []
   } catch (error) {
     console.error('加载案例失败:', error)
     ElMessage.error('加载案例失败')

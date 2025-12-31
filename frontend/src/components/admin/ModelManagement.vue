@@ -83,7 +83,7 @@ const loadData = async () => {
   try {
     loading.value = true
     const response = await api.getModels()
-    models.value = response.data || []
+    models.value = response || []
   } catch (error) {
     console.error('加载模型失败:', error)
     ElMessage.error('加载模型失败')

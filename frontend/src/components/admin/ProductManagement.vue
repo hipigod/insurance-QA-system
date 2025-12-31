@@ -79,7 +79,7 @@ const loadData = async () => {
   try {
     loading.value = true
     const response = await api.getProducts()
-    products.value = response.data || []
+    products.value = response || []
   } catch (error) {
     console.error('加载产品失败:', error)
     ElMessage.error('加载产品失败')

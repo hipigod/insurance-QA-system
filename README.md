@@ -1,4 +1,4 @@
-# 保险销售智能陪练系统 Demo V1.2
+# 保险销售智能陪练系统 V0.2
 
 > AI驱动的保险销售能力提升平台
 
@@ -16,6 +16,7 @@
 - 💡 **优秀案例对比**：针对薄弱环节推送标准话术参考
 - 📱 **移动端适配**：响应式设计，完美支持手机浏览器
 - 🔒 **隐私保护**：数据本地存储，不上传服务器
+- ⚙️ **管理后台**：完整的角色、产品、评分维度、案例管理系统
 
 ### 技术栈
 
@@ -149,15 +150,25 @@ Insurance Q&A System/
 ### 后端配置（.env）
 
 ```env
-# AI模型配置
+# AI模型配置 - DeepSeek(推荐)
 DEFAULT_MODEL=deepseek-chat
-MODEL_API_KEY=your_api_key_here
+MODEL_API_KEY=your_deepseek_api_key_here
 MODEL_API_BASE=https://api.deepseek.com/v1
 
+# 如果使用通义千问,取消下面的注释并注释掉上面的配置
+# DEFAULT_MODEL=qwen-plus
+# MODEL_API_KEY=your_qwen_api_key_here
+# MODEL_API_BASE=https://dashscope.aliyuncs.com/compatible-mode/v1
+
 # 对话配置
-AI_RESPONSE_TIMEOUT=10
-AI_TEMPERATURE=0.7
+AI_RESPONSE_TIMEOUT=25  # AI响应超时时间(秒)
+AI_TEMPERATURE=0.7      # AI创意度(0-1)
 ```
+
+**重要提示**：
+1. 首次使用需要配置有效的API Key
+2. 推荐使用DeepSeek（免费额度大、响应快）
+3. 修改.env后需要重启后端服务才能生效
 
 ### 前端配置
 
@@ -206,27 +217,43 @@ A: 本项目推荐使用DeepSeek，访问 https://platform.deepseek.com/ 注册�
 ### Q: 支持哪些国产大模型？
 
 A: 支持所有兼容OpenAI API格式的国产大模型，如：
-- DeepSeek
+- **DeepSeek**（推荐） - 响应快、免费额度大
 - 智谱AI (ChatGLM)
 - 百度文心一言
 - 阿里通义千问
+- 月之暗面 (Kimi)
 - 等等
+
+配置方法：编辑 `backend/.env` 文件中的相关配置
 
 ### Q: 数据存储在哪里？
 
 A: 所有数据都存储在本地：
 - 对话记录：浏览器LocalStorage（前端）
 - 角色配置：SQLite数据库（后端data目录）
+- 产品信息：SQLite数据库（后端data目录）
+- 评分记录：浏览器LocalStorage（前端）
+
+**注意**：清除浏览器数据会导致对话记录丢失，请注意备份。
 
 ### Q: 如何自定义角色和产品？
 
-A: 可以通过以下方式：
-1. 直接修改数据库（使用API接口）
-2. 等待管理后台功能开发中
+A: 通过管理后台界面：
+1. 点击首页右上角"管理后台"按钮
+2. 在相应标签页进行增删改查操作
+3. 支持自定义角色、产品、评分维度、优秀案例
 
 ---
 
 ## 版本历史
+
+### V0.2.0 (2025-12-31)
+- ✅ **新增管理后台**：完整的角色、产品、评分维度、案例管理功能
+- ✅ **优化超时配置**：前端30秒/后端25秒,避免AI响应超时
+- ✅ **修复数据加载**：修复管理后台数据不显示问题
+- ✅ **改进错误处理**：更友好的错误提示和异常处理
+- ✅ **性能优化**：AI连接测试通过,响应速度<5秒
+- ✅ **配置优化**：支持多种国产大模型配置切换
 
 ### V1.2.0 (2025-12-30)
 - ✅ 实现WebSocket实时对话
@@ -236,10 +263,10 @@ A: 可以通过以下方式：
 - ✅ 移动端适配优化
 
 ### 计划功能
-- ⏳ 管理后台界面
 - ⏳ 产品文档自动解析
 - ⏳ 语音对话功能
 - ⏳ 数据导出功能
+- ⏳ 用户系统
 
 ---
 

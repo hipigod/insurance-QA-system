@@ -77,7 +77,7 @@ const loadData = async () => {
   try {
     loading.value = true
     const response = await api.getRoles()
-    roles.value = response.data || []
+    roles.value = response || []
   } catch (error) {
     console.error('加载角色失败:', error)
     ElMessage.error('加载角色失败')
