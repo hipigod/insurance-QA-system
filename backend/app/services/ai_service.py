@@ -199,7 +199,10 @@ class AIService:
                 result_text = result_text.split("```")[1].split("```")[0].strip()
 
             result = json.loads(result_text)
-            return result
+
+            # 将中文key转换为英文key,以匹配前端期望
+            converted_result = self._convert_score_keys(result)
+            return converted_result
 
         except asyncio.TimeoutError:
             raise Exception("评分超时")
@@ -209,6 +212,50 @@ class AIService:
         except Exception as e:
             print(f"评分失败: {str(e)}")
             raise Exception(f"评分服务异常: {str(e)}")
+
+    def _convert_score_keys(self, result: Dict) -> Dict:
+        """
+        将AI返回的中文key转换为前端期望的英文key
+
+        Args:
+            result: AI返回的原始结果
+
+        Returns:
+            转换后的结果
+        """
+        converted = {}
+
+        # 转换顶级key
+        key_mapping = {
+            "总分": "total_score",
+            "维度评分": "dimension_scores",
+            "异议类型标签": "objection_tags",
+            "总体评价": "overall_evaluation"
+        }
+
+        for chinese_key, value in result.items():
+            english_key = key_mapping.get(chinese_key, chinese_key)
+
+            if chinese_key == "维度评分" and isinstance(value, dict):
+                # 转换维度评分中的嵌套key
+                converted[english_key] = {}
+                for dim_name, dim_data in value.items():
+                    if isinstance(dim_data, dict):
+                        converted_dim = {}
+                        dim_key_mapping = {
+                            "分数": "score",
+                            "评价": "evaluation"
+                        }
+                        for cn_key, cn_value in dim_data.items():
+                            en_key = dim_key_mapping.get(cn_key, cn_key)
+                            converted_dim[en_key] = cn_value
+                        converted[english_key][dim_name] = converted_dim
+                    else:
+                        converted[english_key][dim_name] = dim_data
+            else:
+                converted[english_key] = value
+
+        return converted
 
     async def test_connection(self) -> bool:
         """测试模型连接"""
