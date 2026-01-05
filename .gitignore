@@ -1,4 +1,10 @@
+# ====================================
+# 保险销售智能陪练系统 - Git忽略文件配置
+# ====================================
+
+# ------------------------------------
 # Python
+# ------------------------------------
 __pycache__/
 *.py[cod]
 *$py.class
@@ -16,40 +22,61 @@ parts/
 sdist/
 var/
 wheels/
+pip-wheel-metadata/
+share/python-wheels/
 *.egg-info/
 .installed.cfg
 *.egg
 MANIFEST
-*.env
-.venv
-env/
+
+# ------------------------------------
+# Virtual Environment
+# ------------------------------------
 venv/
+env/
 ENV/
 env.bak/
 venv.bak/
-*.sqlite
-*.db
+.venv/
 
-# Node / Frontend
+# ------------------------------------
+# PyCharm / IDE
+# ------------------------------------
+.idea/
+*.iml
+*.iws
+.idea_modules/
+.vscode/
+*.swp
+*.swo
+*~
+.project
+.classpath
+.settings/
+
+# ------------------------------------
+# Node.js / Frontend
+# ------------------------------------
 node_modules/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
+lerna-debug.log*
 dist/
+dist-ssr/
 .cache/
+.parcel-cache/
+.next/
+.nuxt/
 .vuepress/dist/
+.server/
+.client/
 *.local
 
-# IDE
-.vscode/
-.idea/
-*.swp
-*.swo
-*~
-.DS_Store
-
+# ------------------------------------
 # Logs
+# ------------------------------------
 logs/
 *.log
 npm-debug.log*
@@ -58,23 +85,108 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-# Environment variables
+# ------------------------------------
+# Environment Variables (重要！)
+# ------------------------------------
 .env
 .env.local
 .env.*.local
+.env.development.local
+.env.test.local
+.env.production.local
 
-# OS
+# ------------------------------------
+# Database
+# ------------------------------------
+*.sqlite
+*.sqlite3
+*.db
+backend/data/*.db
+backend/data/*.sqlite
+backend/data/*.sqlite3
+
+# ------------------------------------
+# Docker
+# ------------------------------------
+.dockerignore
+
+# ------------------------------------
+# Operating System
+# ------------------------------------
 .DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
 Thumbs.db
+Desktop.ini
 
-# Project specific
+# ------------------------------------
+# Testing & Coverage
+# ------------------------------------
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.nox/
+coverage.xml
+*.cover
+.hypothesis/
+.pytest_cache/
+
+# ------------------------------------
+# Jupyter Notebook
+# ------------------------------------
+.ipynb_checkpoints/
+*.ipynb
+
+# ------------------------------------
+# Package Files
+# ------------------------------------
+*.jar
+*.war
+*.nar
+*.ear
+*.zip
+*.tar.gz
+*.rar
+
+# ------------------------------------
+# Temporary Files
+# ------------------------------------
+tmp/
+temp/
+*.tmp
+*.bak
+*.swp
+*~.nib
+*.bak
+
+# ------------------------------------
+# Project Specific
+# ------------------------------------
+# 数据文件
+backend/data/
 data/uploads/
 data/chroma_db/
-*.sqlite
-*.db
-backend/data/
-frontend/dist/
 
-# API Keys (security)
+# 构建产物
+frontend/dist/
+frontend/.vite/
+
+# API密钥（安全）
 config/api_keys.json
 secrets/
+*.key
+*.pem
+
+# 备份文件
+backups/
+*.backup
+
+# ------------------------------------
+# CI/CD
+# ------------------------------------
+.github/workflows/*.log

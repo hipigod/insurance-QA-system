@@ -16,12 +16,19 @@ docs/
 ## 📖 使用指南 (guides/)
 
 ### 用户文档
-- [快速开始指南](guides/快速开始.md) - 系统快速入门
-- [用户使用手册](guides/用户使用手册.md) - 详细使用说明
+- [快速开始指南](guides/QUICKSTART.md) - 系统快速入门
+- [部署运行指南](guides/DEPLOY_RUN.md) - 部署和运行说明
+- [Web服务器部署](guides/Web服务器部署.md) - Web服务器部署文档
+- [模型配置指南](guides/MODEL_CONFIG_GUIDE.md) - AI模型配置说明
+
+### Docker部署
+- [Docker部署完整指南](DOCKER_DEPLOYMENT.md) - Docker容器化部署完整指南
+- [Docker项目结构说明](DOCKER_PROJECT_STRUCTURE.md) - Docker化项目结构详解
 
 ### 开发文档
-- [开发环境搭建](guides/开发环境搭建.md) - 开发环境配置指南
-- [系统架构设计](guides/系统架构设计.md) - 系统架构和技术选型
+- [Git工作流指南](guides/GIT_GUIDE.md) - Git版本控制规范
+- [启动说明](guides/启动说明.md) - 应用启动说明
+- [预设数据说明](guides/预设数据说明.md) - 预设数据配置说明
 
 ---
 
@@ -34,30 +41,24 @@ docs/
 
 ### 测试总结
 - [测试总结报告 V2.1 (最终版)](reports/测试总结报告-V2.1-最终版.md) - 完整测试结果
-- [测试总结报告 V2.0](reports/测试总结报告-V2.0.md) - V2.0版本测试
 - [测试报告](reports/测试报告.md) - 功能测试报告
 - [TEST_SUMMARY](reports/TEST_SUMMARY.md) - 测试总结
 
 ### 诊断报告
 - [DIAGNOSIS_REPORT](reports/DIAGNOSIS_REPORT.md) - 模型API路由问题诊断
 - [DIAGNOSTIC_TOOLS_INDEX](reports/DIAGNOSTIC_TOOLS_INDEX.md) - 诊断工具索引
-- [QUICK_REFERENCE](reports/QUICK_REFERENCE.md) - 快速参考
 - [SOLUTION_SUMMARY](reports/SOLUTION_SUMMARY.md) - 解决方案总结
 
-### 其他报告
+### 部署报告
 - [部署总结](reports/部署总结.md) - 系统部署总结
-- [启动状态](reports/启动状态.md) - 服务启动状态
-- [任务完成报告](reports/任务完成报告.md) - 开发任务完成情况
-- [运行成功](reports/运行成功.md) - 系统运行验证
-- [最终运行报告](reports/最终运行报告.md) - 最终运行状态
 
 ---
 
 ## 📋 产品需求 (prd/)
 
 ### 需求文档
-- [TEST_PLAN](prd/TEST_PLAN.md) - 完整测试计划 V2.0 (25个测试用例)
-- [产品需求文档](prd/产品需求文档.md) - 产品功能需求
+- [产品需求文档 V1.2](prd/PRD-保险销售智能陪练系统demo-V1.2.md) - 完整产品需求文档
+- [测试计划](prd/TEST_PLAN.md) - 完整测试计划 V2.0 (25个测试用例)
 
 ---
 
@@ -122,6 +123,7 @@ docs/
 
 | 日期 | 更新内容 | 负责人 |
 |------|---------|--------|
+| 2026-01-05 | 清理冗余文档，删除9个过时文档 | Claude Code |
 | 2025-12-31 | 创建文档中心,整理所有文档 | Claude Code |
 | 2025-12-31 | 添加BUG-003评分报告修复报告 | Claude Code |
 
