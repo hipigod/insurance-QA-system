@@ -1074,11 +1074,5 @@ crontab -e
 
 ---
 
-## 联系支持
-
-- **GitHub Issues**: https://github.com/hipigod/insurance-QA-system/issues
-- **文档**: 详见项目README.md
-
----
 
 **🎉 祝您部署成功!**
