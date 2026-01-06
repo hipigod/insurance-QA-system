@@ -21,7 +21,7 @@ class Settings(BaseSettings):
     DEBUG: bool = True
 
     # 服务器配置
-    HOST: str = "127.0.0.1"
+    HOST: str = "0.0.0.0"  # Docker环境必须监听所有网络接口
     PORT: int = 8000
     RELOAD: bool = True  # 自动重载(开发模式)
 

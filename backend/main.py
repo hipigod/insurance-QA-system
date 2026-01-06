@@ -1,17 +1,38 @@
 """
 FastAPI主应用
 """
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
 from app.core.database import init_db
 from app.api import roles, products, dialogue, dimensions, cases, models
 
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """应用生命周期管理"""
+    # 启动时执行
+    await init_db()
+    try:
+        print(f"🚀 {settings.APP_NAME} v{settings.APP_VERSION} 启动成功！")
+        print(f"📍 API地址: http://{settings.HOST}:{settings.PORT}/docs")
+    except UnicodeEncodeError:
+        print(f"{settings.APP_NAME} v{settings.APP_VERSION} 启动成功!")
+        print(f"API地址: http://{settings.HOST}:{settings.PORT}/docs")
+
+    yield  # 应用运行期间
+
+    # 关闭时执行（如果需要）
+    print("👋 应用关闭中...")
+
+
 # 创建应用实例
 app = FastAPI(
     title=settings.APP_NAME,
     version=settings.APP_VERSION,
-    description="保险销售智能陪练系统API"
+    description="保险销售智能陪练系统API",
+    lifespan=lifespan  # 使用新的lifespan API
 )
 
 # 配置CORS
@@ -22,20 +43,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-
-# 启动事件
-@app.on_event("startup")
-async def startup_event():
-    """应用启动时初始化"""
-    # 初始化数据库
-    await init_db()
-    try:
-        print(f"🚀 {settings.APP_NAME} v{settings.APP_VERSION} 启动成功！")
-        print(f"📍 API地址: http://{settings.HOST}:{settings.PORT}/docs")
-    except UnicodeEncodeError:
-        print(f"{settings.APP_NAME} v{settings.APP_VERSION} 启动成功!")
-        print(f"API地址: http://{settings.HOST}:{settings.PORT}/docs")
 
 
 # 注册路由
