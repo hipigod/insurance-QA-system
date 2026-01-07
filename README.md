@@ -1,4 +1,4 @@
-# 保险销售智能陪练系统 V0.2.1
+# 保险销售智能陪练系统 V0.2.2
 
 > AI驱动的保险销售能力提升平台
 
@@ -8,15 +8,15 @@
 
 > 📚 **文档中心**: 查看完整文档请访问 [docs/README.md](docs/README.md)
 
-### 核心功能（正式版）
+### 核心功能
 
-- 🤖 **AI对话练习**：智能模拟多种真实客户类型，提供接近真实的沟通体验
+- 🤖 **AI对话练习**：智能模拟5种真实客户类型，提供接近真实的沟通体验
 - 📊 **多维度评分**：从沟通能力、有效营销、产品熟练度、异议处理4个维度评估
-- 🎯 **异议识别**：自动识别价格、信任、需求、竞品等异议类型（暂无）
-- 💡 **优秀案例对比**：针对薄弱环节推送标准话术参考（暂无）
-- 📱 **移动端适配**：响应式设计，完美支持手机浏览器（暂无）
-- 🔒 **隐私保护**：数据本地存储，不上传服务器（暂无）
+- 🎯 **异议识别**：自动识别价格、信任、需求、竞品等异议类型
+- 💡 **优秀案例对比**：针对薄弱环节推送标准话术参考
 - ⚙️ **管理后台**：完整的角色、产品、评分维度、案例管理系统
+- 🐳 **Docker支持**：一键部署，开箱即用，环境隔离
+- 📦 **预设数据**：内置完整的演示数据，无需手动配置
 
 ### 技术栈
 
@@ -32,17 +32,75 @@
 - Element Plus - UI组件库
 - Pinia - 状态管理
 
+**部署**：
+- Docker - 容器化部署
+- Docker Compose - 多容器编排
+- Nginx - 反向代理和静态文件服务
+
 ---
 
 ## 快速开始
 
-### 环境要求
+### 部署方式选择
+
+本项目支持两种部署方式：
+
+#### 🐳 方式一：Docker 部署（推荐）
+
+**优点**：一键部署、环境隔离、跨平台、开箱即用
+
+**环境要求**：
+- Docker Desktop 已安装并运行
+- 国产大模型 API Key（推荐 DeepSeek）
+
+**快速启动**：
+```bash
+# 1. 克隆项目
+git clone https://github.com/hipigod/insurance-QA-system.git
+cd insurance-QA-system
+
+# 2. 配置环境变量
+cp .env.example .env
+# 编辑 .env 文件，填入您的 MODEL_API_KEY
+
+# 3. 一键启动
+docker compose up -d
+
+# 4. 初始化预设数据（首次运行）
+docker exec insurance-backend python init_demo_data.py
+```
+
+**访问地址**：
+- 前端：http://localhost
+- 后端 API：http://localhost:8000/docs
+
+**常用命令**：
+```bash
+# 查看容器状态
+docker ps
+
+# 查看日志
+docker logs insurance-backend
+docker logs insurance-frontend
+
+# 停止服务
+docker compose down
+
+# 重启服务
+docker compose restart
+```
+
+#### 💻 方式二：本地开发模式
+
+**优点**：便于调试、修改代码实时生效
+
+**环境要求**：
 
 - Python 3.9+
 - Node.js 16+
 - 国产大模型API Key（推荐DeepSeek）
 
-### 安装步骤
+**安装步骤**
 
 #### 1. 克隆项目
 
@@ -123,6 +181,7 @@ Insurance Q&A System/
 │   │   └── utils/          # 工具函数
 │   ├── data/               # 数据库文件（自动生成）
 │   ├── main.py             # 应用入口
+│   ├── Dockerfile          # Docker镜像构建
 │   └── requirements.txt    # Python依赖
 │
 ├── frontend/               # 前端代码
@@ -136,11 +195,18 @@ Insurance Q&A System/
 │   │   ├── App.vue        # 根组件
 │   │   └── main.js        # 入口文件
 │   ├── package.json       # 依赖配置
-│   └── vite.config.js     # Vite配置
+│   ├── vite.config.js     # Vite配置
+│   ├── Dockerfile         # Docker镜像构建
+│   └── nginx.conf         # Nginx配置
+│
+├── scripts/               # 工具脚本
+│   └── init_demo_data.py  # 数据初始化脚本
 │
 ├── docs/                   # 文档目录
-├── .gitignore             # Git忽略文件
-└── README.md              # 项目说明
+├── docker-compose.yml      # Docker编排配置
+├── .env.example            # 环境变量模板
+├── .gitignore              # Git忽略文件
+└── README.md               # 项目说明
 ```
 
 ---
@@ -210,6 +276,18 @@ AI_TEMPERATURE=0.7      # AI创意度(0-1)
 
 ## 常见问题
 
+### Q: Docker部署后如何初始化预设数据？
+
+A: 首次启动Docker容器后，运行以下命令初始化预设数据：
+```bash
+docker exec insurance-backend python init_demo_data.py
+```
+
+这会自动创建：
+- 5个客户角色（小白客户、懂行客户、难缠客户、犹豫客户等）
+- 3个保险产品（重疾险、医疗险、寿险）
+- 4个评分维度（沟通能力、有效营销、产品熟练度、异议处理）
+
 ### Q: 如何获取AI模型的API Key？
 
 A: 本项目推荐使用DeepSeek，访问 https://platform.deepseek.com/ 注册并获取API Key。
@@ -228,13 +306,27 @@ A: 支持所有兼容OpenAI API格式的国产大模型，如：
 
 ### Q: 数据存储在哪里？
 
-A: 所有数据都存储在本地：
+A: **Docker部署模式**：
+- 使用Docker命名卷 `backend-data` 持久化数据库
+- 数据存储路径：`/app/data/insurance_practice.db` (容器内)
+- 对话记录：浏览器LocalStorage（前端）
+
+**本地开发模式**：
+- 所有数据都存储在本地
 - 对话记录：浏览器LocalStorage（前端）
 - 角色配置：SQLite数据库（后端data目录）
 - 产品信息：SQLite数据库（后端data目录）
 - 评分记录：浏览器LocalStorage（前端）
 
 **注意**：清除浏览器数据会导致对话记录丢失，请注意备份。
+
+### Q: Docker容器数据会丢失吗？
+
+A: 不会。本项目使用Docker命名卷（`backend-data`）来持久化数据库数据。即使容器被删除，数据也会保留。如需完全清理数据：
+```bash
+# 停止并删除容器和卷
+docker compose down -v
+```
 
 ### Q: 如何自定义角色和产品？
 
@@ -246,6 +338,13 @@ A: 通过管理后台界面：
 ---
 
 ## 版本历史
+
+### V0.2.2 (2026-01-07)
+- 🐳 **Docker部署优化**：修复Docker容器数据库初始化问题
+- ✅ **一键部署**：添加完整的Docker Compose配置
+- 📦 **预设数据**：提供数据初始化脚本，包含5个角色、3个产品、4个评分维度
+- 🔧 **配置优化**：简化数据库连接配置，提升容器稳定性
+- 📝 **文档更新**：添加Docker部署文档和快速启动指南
 
 ### V0.2.1 (2025-12-31)
 - 🐛 **修复评分跳转Bug**: 修复对话结束后无法跳转到结果页面的问题
