@@ -175,7 +175,12 @@ const endDialogue = () => {
 }
 
 const connectWebSocket = () => {
-  const wsUrl = `ws://127.0.0.1:8000/api/dialogue/ws/${sessionId.value}`
+  // 动态构建WebSocket URL，自动适配开发/生产环境
+  const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
+  const host = window.location.host
+  const wsUrl = `${protocol}//${host}/api/dialogue/ws/${sessionId.value}`
+
+  console.log('正在连接WebSocket:', wsUrl)
   websocket = new WebSocket(wsUrl)
 
   websocket.onopen = () => {
