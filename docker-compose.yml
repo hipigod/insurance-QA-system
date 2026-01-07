@@ -33,7 +33,7 @@ services:
 
     volumes:
       # 持久化数据库数据
-      - ./backend/data:/app/data
+      - backend-data:/app/data
     restart: unless-stopped
     networks:
       - insurance-network
@@ -71,3 +71,6 @@ networks:
     ipam:
       config:
         - subnet: 172.20.0.0/16
+
+volumes:
+  backend-data:

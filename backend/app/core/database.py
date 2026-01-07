@@ -10,12 +10,7 @@ from app.core.config import settings
 engine = create_async_engine(
     settings.DATABASE_URL,
     echo=settings.DEBUG,
-    future=True,
-    pool_pre_ping=True,  # 连接池预检查，确保连接有效
-    pool_recycle=3600,   # 1小时回收连接，防止SQLite连接过期
-    connect_args={
-        "check_same_thread": False  # SQLite必需，允许多线程访问
-    }
+    future=True
 )
 
 # 创建会话工厂

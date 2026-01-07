@@ -13,6 +13,12 @@ from app.api import roles, products, dialogue, dimensions, cases, models
 async def lifespan(app: FastAPI):
     """应用生命周期管理"""
     # 启动时执行
+    # 确保数据库目录存在
+    import os
+    db_path = settings.DATABASE_URL.split("///")[-1]
+    db_dir = os.path.dirname(db_path)
+    os.makedirs(db_dir, exist_ok=True)
+
     await init_db()
     try:
         print(f"🚀 {settings.APP_NAME} v{settings.APP_VERSION} 启动成功！")
