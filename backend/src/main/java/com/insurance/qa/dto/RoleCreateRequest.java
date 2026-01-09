@@ -1,0 +1,46 @@
+package com.insurance.qa.dto;
+
+import com.fasterxml.jackson.annotation.JsonProperty;
+import jakarta.validation.constraints.NotBlank;
+
+public class RoleCreateRequest {
+  @NotBlank
+  private String name;
+  private String description;
+  private String difficulty;
+  @NotBlank
+  @JsonProperty("system_prompt")
+  private String systemPrompt;
+
+  public String getName() {
+    return name;
+  }
+
+  public void setName(String name) {
+    this.name = name;
+  }
+
+  public String getDescription() {
+    return description;
+  }
+
+  public void setDescription(String description) {
+    this.description = description;
+  }
+
+  public String getDifficulty() {
+    return difficulty;
+  }
+
+  public void setDifficulty(String difficulty) {
+    this.difficulty = difficulty;
+  }
+
+  public String getSystemPrompt() {
+    return systemPrompt;
+  }
+
+  public void setSystemPrompt(String systemPrompt) {
+    this.systemPrompt = systemPrompt;
+  }
+}

@@ -1,12 +1,12 @@
-# 构建阶段 - 使用Node.js 18（解决crypto兼容性问题）
+﻿# 构建阶段 - 使用 Node.js 18（解决 crypto 兼容性问题）
 FROM node:18-alpine as builder
 
 WORKDIR /app
 
-# 复制package文件
+# 复制 package 文件
 COPY package*.json ./
 
-# 安装依赖（包括开发依赖，因为构建需要vite）
+# 安装依赖（包含开发依赖，因为构建需要 Vite）
 RUN npm ci
 
 # 复制项目文件
@@ -22,19 +22,19 @@ ENV NODE_ENV=production
 # 构建应用
 RUN npm run build
 
-# 生产阶段 - 使用Nginx
+# 生产阶段 - 使用 Nginx
 FROM nginx:alpine
 
-# 安装curl（用于健康检查）
+# 安装 curl（用于健康检查）
 RUN apk add --no-cache curl
 
 # 复制构建产物
 COPY --from=builder /app/dist /usr/share/nginx/html
 
-# 复制nginx配置
+# 复制 Nginx 配置
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
-# 创建nginx运行时目录
+# 创建 Nginx 运行目录
 RUN mkdir -p /var/cache/nginx/client_temp \
     /var/cache/nginx/proxy_temp \
     /var/cache/nginx/fastcgi_temp \
@@ -50,5 +50,5 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
 # 暴露端口
 EXPOSE 80
 
-# 启动nginx
+# 启动 Nginx
 CMD ["nginx", "-g", "daemon off;"]

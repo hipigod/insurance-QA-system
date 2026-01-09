@@ -1,27 +1,26 @@
 import axios from 'axios'
 
 const api = axios.create({
-  baseURL: '/api',
-  timeout: 30000  // 增加到30秒,避免AI响应慢时超时
+  baseURL: '/api/v1',
+  timeout: 30000
 })
 
-// 请求拦截器
 api.interceptors.request.use(
-  config => {
-    return config
-  },
-  error => {
-    return Promise.reject(error)
-  }
+  config => config,
+  error => Promise.reject(error)
 )
 
-// 响应拦截器
 api.interceptors.response.use(
   response => {
-    return response.data
+    const payload = response.data
+    if (payload && payload.success) {
+      return payload.data
+    }
+    const message = payload?.message || 'Request failed'
+    return Promise.reject(new Error(message))
   },
   error => {
-    console.error('API错误:', error)
+    console.error('API error:', error)
     return Promise.reject(error)
   }
 )

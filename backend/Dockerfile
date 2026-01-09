@@ -1,36 +1,15 @@
-# 使用Python 3.9 slim版本作为基础镜像
-FROM python:3.9-slim
-
-# 设置工作目录
+FROM maven:3.9.6-eclipse-temurin-17 AS build
 WORKDIR /app
+COPY pom.xml ./
+COPY maven-settings.xml /root/.m2/settings.xml
+RUN mvn -q -e -DskipTests -s /root/.m2/settings.xml dependency:go-offline
+COPY src ./src
+RUN mvn -q -DskipTests -s /root/.m2/settings.xml package
 
-# 设置环境变量
-ENV PYTHONUNBUFFERED=1 \
-    PYTHONDONTWRITEBYTECODE=1 \
-    PIP_NO_CACHE_DIR=1 \
-    PIP_DISABLE_PIP_VERSION_CHECK=1
-
-# 安装系统依赖
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends \
-    gcc \
-    && rm -rf /var/lib/apt/lists/*
-
-# 复制依赖文件
-COPY requirements.txt .
-
-# 安装Python依赖
-RUN pip install --no-cache-dir -r requirements.txt
-
-# 复制项目文件
-COPY . .
-
-# 创建data目录并设置权限
-RUN mkdir -p /app/data && \
-    chmod 755 /app/data
-
-# 暴露端口
+FROM eclipse-temurin:17-jre-alpine
+WORKDIR /app
+RUN apk add --no-cache curl
+COPY --from=build /app/target/qa-backend-0.1.0.jar /app/app.jar
+RUN mkdir -p /app/data
 EXPOSE 8000
-
-# 启动命令
-CMD ["python", "main.py"]
+ENTRYPOINT ["java", "-jar", "/app/app.jar"]

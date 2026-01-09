@@ -1,28 +1,18 @@
-<template>
+﻿<template>
   <div class="dialogue-container">
-    <!-- 顶部导航 -->
     <div class="dialogue-header">
-      <el-button
-        circle
-        size="small"
-        @click="goBack"
-      >
+      <el-button circle size="small" @click="goBack">
         <el-icon><ArrowLeft /></el-icon>
       </el-button>
       <div class="header-info">
         <h3>{{ roleName }} - {{ productName }}</h3>
         <el-tag size="small" type="success">实时对话中</el-tag>
       </div>
-      <el-button
-        type="danger"
-        size="small"
-        @click="endDialogue"
-      >
+      <el-button type="danger" size="small" @click="endDialogue">
         结束对话
       </el-button>
     </div>
 
-    <!-- 消息区域 -->
     <div class="messages-container" ref="messagesRef">
       <div
         v-for="(msg, index) in messages"
@@ -40,7 +30,6 @@
         </div>
       </div>
 
-      <!-- AI思考中 -->
       <div v-if="thinking" class="message-item assistant thinking">
         <div class="message-avatar">
           <el-icon><Avatar /></el-icon>
@@ -56,7 +45,6 @@
       </div>
     </div>
 
-    <!-- 输入区域 -->
     <div class="input-container">
       <el-input
         v-model="userInput"
@@ -85,7 +73,6 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 
 const router = useRouter()
 
-// 数据
 const sessionId = ref('')
 const roleName = ref('')
 const productName = ref('')
@@ -97,7 +84,6 @@ const messagesRef = ref(null)
 
 let websocket = null
 
-// 方法
 const goBack = () => {
   ElMessageBox.confirm(
     '确定要退出当前对话吗？对话进度将不会保存。',
@@ -140,15 +126,14 @@ const sendMessage = () => {
   const message = userInput.value.trim()
   if (!message || thinking.value) return
 
-  // 添加用户消息
   addMessage('user', message)
   userInput.value = ''
 
-  // 发送到WebSocket
   if (websocket && websocket.readyState === WebSocket.OPEN) {
     websocket.send(JSON.stringify({
-      action: 'chat',
-      message: message
+      type: 'chat',
+      session_id: sessionId.value,
+      message
     }))
   }
 }
@@ -165,26 +150,29 @@ const endDialogue = () => {
   ).then(() => {
     thinking.value = true
 
-    // 发送结束对话请求
     if (websocket && websocket.readyState === WebSocket.OPEN) {
       websocket.send(JSON.stringify({
-        action: 'end'
+        type: 'end',
+        session_id: sessionId.value
       }))
     }
   }).catch(() => {})
 }
 
 const connectWebSocket = () => {
-  // 动态构建WebSocket URL，自动适配开发/生产环境
   const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
   const host = window.location.host
-  const wsUrl = `${protocol}//${host}/api/dialogue/ws/${sessionId.value}`
+  const wsUrl = `${protocol}//${host}/ws/dialogue`
 
   console.log('正在连接WebSocket:', wsUrl)
   websocket = new WebSocket(wsUrl)
 
   websocket.onopen = () => {
-    console.log('WebSocket连接成功')
+    console.log('WebSocket connected')
+    websocket.send(JSON.stringify({
+      type: 'subscribe',
+      session_id: sessionId.value
+    }))
   }
 
   websocket.onmessage = (event) => {
@@ -200,7 +188,6 @@ const connectWebSocket = () => {
         thinking.value = true
       }
     } else if (data.type === 'score') {
-      // 评分完成，保存数据并跳转
       sessionStorage.setItem('score_result', JSON.stringify(data.data))
       sessionStorage.setItem('dialogue_history', JSON.stringify(messages.value))
 
@@ -223,9 +210,7 @@ const connectWebSocket = () => {
   }
 }
 
-// 生命周期
 onMounted(() => {
-  // 从sessionStorage获取数据
   sessionId.value = sessionStorage.getItem('session_id')
   roleName.value = sessionStorage.getItem('role_name')
   productName.value = sessionStorage.getItem('product_name')
@@ -237,12 +222,10 @@ onMounted(() => {
     return
   }
 
-  // 添加AI问候消息
   if (greeting.value) {
     addMessage('assistant', greeting.value)
   }
 
-  // 连接WebSocket
   connectWebSocket()
 })
 
@@ -385,7 +368,6 @@ onUnmounted(() => {
   align-self: flex-end;
 }
 
-/* 移动端适配 */
 @media (max-width: 768px) {
   .message-content {
     max-width: 85%;

@@ -1,0 +1,31 @@
+server:
+  port: ${SERVER_PORT:8000}
+
+spring:
+  datasource:
+    url: jdbc:sqlite:./data/insurance_practice.db
+    driver-class-name: org.sqlite.JDBC
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        dialect: org.hibernate.community.dialect.SQLiteDialect
+    open-in-view: false
+  jackson:
+    property-naming-strategy: SNAKE_CASE
+
+app:
+  name: ${APP_NAME:Insurance QA System}
+  version: ${APP_VERSION:1.0.0}
+  cors-origins: ${CORS_ORIGINS:http://localhost:80,http://localhost:5173}
+  ai:
+    model: ${DEFAULT_MODEL:deepseek-chat}
+    api-key: ${MODEL_API_KEY:}
+    api-base: ${MODEL_API_BASE:https://api.deepseek.com/v1}
+    temperature: ${AI_TEMPERATURE:0.7}
+    timeout-seconds: ${AI_RESPONSE_TIMEOUT:25}
+
+logging:
+  file:
+    name: ${LOG_FILE:/app/logs/backend.log}

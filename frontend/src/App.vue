@@ -5,7 +5,7 @@
 </template>
 
 <script setup>
-// App根组件
+// 应用根组件
 </script>
 
 <style>

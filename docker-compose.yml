@@ -1,7 +1,6 @@
 version: '3.8'
 
 services:
-  # 后端服务
   backend:
     build:
       context: ./backend
@@ -10,41 +9,28 @@ services:
     ports:
       - "8000:8000"
     environment:
-      # 应用配置
-      - APP_NAME=保险销售智能陪练系统
-      - APP_VERSION=1.2.0
-      - DEBUG=False
-
-      # AI模型配置 - 请在.env文件中配置
+      - APP_NAME=Insurance QA System
+      - APP_VERSION=1.0.0
+      - SERVER_PORT=8000
       - DEFAULT_MODEL=${DEFAULT_MODEL:-deepseek-chat}
       - MODEL_API_KEY=${MODEL_API_KEY}
       - MODEL_API_BASE=${MODEL_API_BASE:-https://api.deepseek.com/v1}
-
-      # 对话配置
       - AI_RESPONSE_TIMEOUT=${AI_RESPONSE_TIMEOUT:-25}
       - AI_TEMPERATURE=${AI_TEMPERATURE:-0.7}
-      - MAX_DIALOGUE_ROUNDS=${MAX_DIALOGUE_ROUNDS:-20}
-
-      # 数据库配置（容器内路径）
-      - DATABASE_URL=sqlite+aiosqlite:///app/data/insurance_practice.db
-
-      # CORS配置
       - CORS_ORIGINS=["http://localhost:80","http://localhost:5173"]
-
     volumes:
-      # 持久化数据库数据
       - backend-data:/app/data
+      - backend-logs:/app/logs
     restart: unless-stopped
     networks:
       - insurance-network
     healthcheck:
-      test: ["CMD", "python", "-c", "import requests; requests.get('http://localhost:8000/health')"]
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/health"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 30s
 
-  # 前端服务
   frontend:
     build:
       context: ./frontend
@@ -74,3 +60,4 @@ networks:
 
 volumes:
   backend-data:
+  backend-logs:
