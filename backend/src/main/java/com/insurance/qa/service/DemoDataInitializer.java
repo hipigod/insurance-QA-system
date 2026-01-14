@@ -30,79 +30,79 @@ public class DemoDataInitializer implements CommandLineRunner {
     if (roleRepository.count() == 0) {
       roleRepository.saveAll(Arrays.asList(
           createRole(
-              "Beginner Customer",
-              "Needs simple explanations and reassurance.",
-              "Easy",
-              "You are a new customer with limited insurance knowledge. Ask basic questions and express mild price concerns."),
+              "新手客户",
+              "需要简单解释和安抚。",
+              "简单",
+              "你是保险知识有限的新客户。请提出基础问题并表达轻微的价格顾虑。"),
           createRole(
-              "Analytical Customer",
-              "Asks detailed questions and compares products.",
-              "Hard",
-              "You are an analytical customer. Ask for coverage details, exclusions, and comparisons."),
+              "理性客户",
+              "会细问保障细节并比较产品。",
+              "困难",
+              "你是理性型客户。请询问保障范围、免责条款并进行产品对比。"),
           createRole(
-              "Skeptical Customer",
-              "Distrustful and raises multiple objections.",
-              "Expert",
-              "You are skeptical and distrustful. Raise objections about price, trust, and claims."),
+              "质疑客户",
+              "不信任并提出多种异议。",
+              "专家",
+              "你对保险持怀疑态度。请围绕价格、信任和理赔提出异议。"),
           createRole(
-              "Indecisive Customer",
-              "Interested but hesitant to decide.",
-              "Medium",
-              "You are interested but hesitant. Ask for time to think and request more reassurance.")
+              "犹豫客户",
+              "有兴趣但迟迟不决定。",
+              "普通",
+              "你对产品有兴趣但犹豫不决。请要求考虑时间并寻求更多安抚。")
       ));
     }
 
     if (productRepository.count() == 0) {
       productRepository.saveAll(Arrays.asList(
           createProduct(
-              "Critical Illness Plan",
-              "Covers major critical illnesses with lump-sum payout.",
-              "Critical",
-              "Covers 120 critical illnesses, lump-sum on diagnosis.",
-              "3000-10000 per year",
-              "Adults 18-50",
-              "Includes waiver of premiums after diagnosis."),
+              "重疾保障计划",
+              "覆盖重大疾病，确诊给付。",
+              "重疾",
+              "覆盖 120 种重疾，确诊一次性给付。",
+              "3000-10000 元/年",
+              "18-50 岁成人",
+              "确诊后豁免保费。"),
           createProduct(
-              "Medical Expense Plan",
-              "High coverage medical plan with reimbursement.",
-              "Medical",
-              "General and serious illness medical reimbursements.",
-              "300-1000 per year",
-              "All ages 0-60",
-              "Covers imported drugs and inpatient fees."),
+              "医疗费用计划",
+              "高保障医疗报销型产品。",
+              "医疗",
+              "覆盖普通与重大疾病医疗费用报销。",
+              "300-1000 元/年",
+              "0-60 岁人群",
+              "覆盖进口药与住院费用。"),
           createProduct(
-              "Term Life Plan",
-              "Affordable term life coverage.",
-              "Life",
-              "Pays 100 percent sum assured on death or total disability.",
-              "500-2000 per year",
-              "Working adults 20-50",
-              "Simple underwriting and flexible term options.")
+              "定期寿险计划",
+              "性价比高的定期寿险。",
+              "寿险",
+              "身故或全残给付 100% 保额。",
+              "500-2000 元/年",
+              "20-50 岁在职人群",
+              "核保简化，期限灵活。")
       ));
     }
 
     if (dimensionRepository.count() == 0) {
       dimensionRepository.saveAll(Arrays.asList(
           createDimension(
-              "Communication",
-              "Clarity, listening, empathy, and responsiveness.",
+              "沟通表达",
+              "清晰表达、倾听、同理心与响应速度。",
               25.0,
-              "Evaluate clarity, listening, empathy, and responsiveness."),
+              "评估清晰表达、倾听、同理心与响应速度。"),
           createDimension(
-              "Sales Effectiveness",
-              "Needs discovery, value delivery, objection handling, closing.",
+              "销售有效性",
+              "需求挖掘、价值传递、异议处理与成交。",
               25.0,
-              "Evaluate discovery, value delivery, objection handling, and closing."),
+              "评估需求挖掘、价值传递、异议处理与成交。"),
           createDimension(
-              "Product Knowledge",
-              "Accuracy and ability to explain terms.",
+              "产品知识",
+              "准确性与条款解释能力。",
               25.0,
-              "Evaluate accuracy and clarity of product explanation."),
+              "评估产品讲解的准确性与清晰度。"),
           createDimension(
-              "Objection Handling",
-              "Ability to identify and resolve objections.",
+              "异议处理",
+              "识别并解决异议的能力。",
               25.0,
-              "Evaluate identification and handling of objections.")
+              "评估异议识别与处理能力。")
       ));
     }
   }

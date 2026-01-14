@@ -182,6 +182,10 @@ secrets/
 *.key
 *.pem
 
+# 种子数据库（保留示例数据）
+!backend/data/
+!backend/data/insurance_practice.db
+
 # 备份文件
 backups/
 *.backup

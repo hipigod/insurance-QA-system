@@ -195,11 +195,24 @@ services:
 
 ### 数据持久化
 
-数据库默认存储在 `./backend/data/` 目录，使用Docker Volume映射：
+数据库默认使用命名卷 `backend-data` 持久化（见 `docker-compose.yml`），容器内路径为 `/app/data`。
+如需直接落盘到仓库目录，可改为 bind mount：
 
 ```yaml
 volumes:
   - ./backend/data:/app/data
+```
+
+**种子数据库（首次部署带示例数据）**:
+仓库内提供 `backend/data/insurance_practice.db`。如果使用默认的命名卷，需要先把种子数据库复制到卷里。
+默认卷名通常是 `<项目目录名>_backend-data`（例如 `insurance-q-a-system_backend-data`）：
+
+```bash
+# 先确认卷名
+docker volume ls
+
+# 将种子数据库复制到卷（将 <volume_name> 替换为实际卷名）
+docker run --rm -v <volume_name>:/app/data -v ${PWD}/backend/data:/seed busybox sh -c "cp /seed/insurance_practice.db /app/data/"
 ```
 
 **备份数据**:
