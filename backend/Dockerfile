@@ -12,4 +12,5 @@ RUN apk add --no-cache curl
 COPY --from=build /app/target/qa-backend-0.1.0.jar /app/app.jar
 RUN mkdir -p /app/data
 EXPOSE 8000
-ENTRYPOINT ["java", "-jar", "/app/app.jar"]
+# 使用 shell 形式以支持 JAVA_OPTS 环境变量
+ENTRYPOINT ["sh", "-c", "java ${JAVA_OPTS} -jar /app/app.jar"]
