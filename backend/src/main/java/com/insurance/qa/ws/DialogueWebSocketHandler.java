@@ -48,6 +48,7 @@ public class DialogueWebSocketHandler extends TextWebSocketHandler {
       case "subscribe" -> handleSubscribe(session, inbound);
       case "chat" -> handleChat(session, inbound);
       case "end" -> handleEnd(session, inbound);
+      case "ping" -> handlePing(session, inbound);
       default -> sendError(session, inbound.getSessionId(), "Unknown message type");
     }
   }
@@ -59,6 +60,15 @@ public class DialogueWebSocketHandler extends TextWebSocketHandler {
         sessionManager.removeSession(sessionId);
       }
     });
+  }
+
+  private void handlePing(WebSocketSession socket, WsMessage inbound) throws Exception {
+    // 心跳检测，简单返回 pong 响应
+    WsMessage pong = new WsMessage();
+    pong.setType("pong");
+    pong.setSessionId(inbound.getSessionId());
+    pong.setTimestamp(inbound.getTimestamp());
+    socket.sendMessage(new TextMessage(objectMapper.writeValueAsString(pong)));
   }
 
   private void handleSubscribe(WebSocketSession socket, WsMessage inbound) throws Exception {

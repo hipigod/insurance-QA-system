@@ -8,6 +8,7 @@ public class WsMessage {
   private String role;
   private String content;
   private Object data;
+  private Long timestamp;
 
   public String getType() {
     return type;
@@ -63,5 +64,13 @@ public class WsMessage {
 
   public void setData(Object data) {
     this.data = data;
+  }
+
+  public Long getTimestamp() {
+    return timestamp;
+  }
+
+  public void setTimestamp(Long timestamp) {
+    this.timestamp = timestamp;
   }
 }

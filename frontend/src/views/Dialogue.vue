@@ -83,6 +83,7 @@ const thinking = ref(false)
 const messagesRef = ref(null)
 
 let websocket = null
+let heartbeatInterval = null
 
 const goBack = () => {
   ElMessageBox.confirm(
@@ -138,6 +139,33 @@ const sendMessage = () => {
   }
 }
 
+const startHeartbeat = () => {
+  // 清除可能存在的旧定时器
+  stopHeartbeat()
+
+  // 每30秒发送一次心跳，保持连接活跃
+  heartbeatInterval = setInterval(() => {
+    if (websocket && websocket.readyState === WebSocket.OPEN) {
+      websocket.send(JSON.stringify({
+        type: 'ping',
+        timestamp: Date.now()
+      }))
+      console.log('WebSocket心跳已发送')
+    } else {
+      // 如果连接已断开，停止心跳
+      stopHeartbeat()
+    }
+  }, 30000) // 30秒
+}
+
+const stopHeartbeat = () => {
+  if (heartbeatInterval) {
+    clearInterval(heartbeatInterval)
+    heartbeatInterval = null
+    console.log('WebSocket心跳已停止')
+  }
+}
+
 const endDialogue = () => {
   ElMessageBox.confirm(
     '确定要结束对话并进行评分吗？',
@@ -169,6 +197,7 @@ const connectWebSocket = () => {
 
   websocket.onopen = () => {
     console.log('WebSocket connected')
+    startHeartbeat()
     websocket.send(JSON.stringify({
       type: 'subscribe',
       session_id: sessionId.value
@@ -206,6 +235,7 @@ const connectWebSocket = () => {
   }
 
   websocket.onclose = () => {
+    stopHeartbeat()
     console.log('WebSocket连接关闭')
   }
 }
@@ -230,6 +260,7 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
+  stopHeartbeat()
   if (websocket) {
     websocket.close()
   }
