@@ -1,4 +1,5 @@
-﻿# 保险销售智能陪练系统
+# 保险销售智能陪练系统
+版本：V0.3
 
 基于 AI 的保险销售训练平台，前端为 Vue 3，后端为 Java Spring Boot。
 
@@ -36,50 +37,95 @@ WebSocket 事件：
 - 服务端：`{ "type": "message", "sessionId": "...", "role": "assistant", "content": "..." }`
 - 服务端：`{ "type": "score", "sessionId": "...", "data": { ... } }`
 
-## 快速开始（Docker）
+## 快速开始
 
+### 前置要求
+- Docker
+- Docker Compose
+- AI 模型 API Key（支持 OpenAI 兼容接口，如 DeepSeek）
+
+### 启动步骤
+
+1. 配置环境变量
 ```bash
 cp .env.example .env
-# 填写 MODEL_API_KEY
+# 编辑 .env 文件，填入 MODEL_API_KEY
+```
 
+2. 启动服务
+```bash
 docker compose up -d
 ```
 
-前端：http://localhost
-后端健康检查：http://localhost:8000/api/v1/health
+3. 访问应用
+- 前端：http://localhost
+- 后端健康检查：http://localhost:8000/api/v1/health
+
+### 停止服务
+```bash
+docker compose down
+```
+
+### 清理数据（可选）
+```bash
+docker compose down -v  # 删除数据库卷
+```
 
 ## 本地开发
 
-后端：
+### 后端开发
 ```bash
 cd backend
-mvn -DskipTests package
+mvn clean package -DskipTests
 java -jar target/qa-backend-0.1.0.jar
 ```
 
-前端：
+### 前端开发
 ```bash
 cd frontend
 npm install
 npm run dev
 ```
 
-HMR 说明（仅开发环境）：如果通过非默认主机/端口访问 Vite（例如反代/8081），
-请在 `npm run dev` 前设置以下环境变量：
+前端开发服务器默认运行在 http://localhost:5173
+
+### HMR 配置（可选）
+如果需要自定义 Vite 开发服务器端口：
 ```bash
-VITE_DEV_PORT=8081
-VITE_HMR_PORT=8081
-VITE_HMR_HOST=localhost
+VITE_DEV_PORT=8081 npm run dev
 ```
 
 ## 环境变量
 
-默认值参考 `.env.example`。
+主要环境变量（详见 `.env.example`）：
+- `MODEL_API_KEY` - AI 模型 API 密钥（必需）
+- `MODEL_API_BASE` - API 基础 URL
+- `MODEL_NAME` - 模型名称
+- `JAVA_OPTS` - JVM 参数
 
 ## 项目结构
 
 ```
-backend/         # Spring Boot 后端
-frontend/        # Vue 前端
-docs/            # 文档
+.
+├── backend/              # Spring Boot 后端
+│   ├── src/             # 源代码
+│   └── pom.xml          # Maven 配置
+├── frontend/            # Vue 3 前端
+│   ├── src/            # 源代码
+│   └── package.json    # NPM 配置
+├── docs/               # 文档
+│   ├── guides/         # 使用指南
+│   ├── problemsolve/   # 问题排查记录
+│   └── 一键远程部署/   # 远程部署方案
+├── docker-compose.yml  # Docker 编排配置
+├── .env.example        # 环境变量示例
+└── README.md           # 项目说明
 ```
+
+## 文档
+
+- [部署与运行指南](docs/guides/DEPLOY_RUN.md)
+- [模型配置指南](docs/guides/MODEL_CONFIG_GUIDE.md)
+- [预设数据说明](docs/guides/预设数据说明.md)
+- [远程部署方案](docs/一键远程部署/REMOTE_DEPLOY.md)
+- [问题排查记录](docs/problemsolve/)
