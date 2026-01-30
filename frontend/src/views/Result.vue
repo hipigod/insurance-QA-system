@@ -207,6 +207,7 @@ onMounted(() => {
   // 从sessionStorage获取数据
   const scoreData = sessionStorage.getItem('score_result')
   const historyData = sessionStorage.getItem('dialogue_history')
+  const fromHistory = sessionStorage.getItem('from_history') === 'true'
 
   if (!scoreData || !historyData) {
     ElMessage.error('数据丢失，请重新开始')
@@ -229,15 +230,19 @@ onMounted(() => {
   }
 
   // 获取现有历史记录
-  const history = JSON.parse(localStorage.getItem('practice_history') || '[]')
-  history.unshift(record)
+  if (!fromHistory) {
+    const history = JSON.parse(localStorage.getItem('practice_history') || '[]')
+    history.unshift(record)
 
-  // 只保留最近10条
-  if (history.length > 10) {
-    history.splice(10)
+    // 只保留最近10条
+    if (history.length > 10) {
+      history.splice(10)
+    }
+
+    localStorage.setItem('practice_history', JSON.stringify(history))
   }
 
-  localStorage.setItem('practice_history', JSON.stringify(history))
+  sessionStorage.removeItem('from_history')
 })
 </script>
 

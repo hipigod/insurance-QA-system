@@ -17,7 +17,7 @@ services:
       - MODEL_API_BASE=${MODEL_API_BASE:-https://api.deepseek.com/v1}
       - AI_RESPONSE_TIMEOUT=${AI_RESPONSE_TIMEOUT:-25}
       - AI_TEMPERATURE=${AI_TEMPERATURE:-0.7}
-      - CORS_ORIGINS=["http://localhost:80","http://localhost:5173"]
+      - CORS_ORIGINS=http://localhost:80,http://localhost:5173
       # JVM 内存优化：限制堆内存和元空间大小（值包含空格，需用引号）
       - JAVA_OPTS="-Xmx512m -Xms256m -XX:MaxMetaspaceSize=128m"
     volumes:

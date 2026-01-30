@@ -95,6 +95,10 @@ lerna-debug.log*
 .env.test.local
 .env.production.local
 
+# 部署配置（敏感）
+deploy-config.conf
+deploy-remote.conf
+
 # ------------------------------------
 # 数据库
 # ------------------------------------
@@ -175,6 +179,7 @@ data/chroma_db/
 # 构建产物
 frontend/dist/
 frontend/.vite/
+backend/target/
 
 # API 密钥（安全）
 config/api_keys.json

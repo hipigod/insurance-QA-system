@@ -96,7 +96,6 @@ public class DialogueWebSocketHandler extends TextWebSocketHandler {
     }
 
     String userMessage = inbound.getMessage() == null ? "" : inbound.getMessage();
-    dialogueSession.addMessage("user", userMessage);
 
     sendStatus(socket, inbound.getSessionId(), "thinking");
     try {
@@ -105,6 +104,9 @@ public class DialogueWebSocketHandler extends TextWebSocketHandler {
           dialogueSession.getProductInfo(),
           dialogueSession.getDialogueHistory(),
           userMessage);
+      if (!userMessage.isBlank()) {
+        dialogueSession.addMessage("user", userMessage);
+      }
       dialogueSession.addMessage("assistant", reply);
       WsMessage outgoing = new WsMessage();
       outgoing.setType("message");
