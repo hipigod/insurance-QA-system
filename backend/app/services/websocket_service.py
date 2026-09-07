@@ -25,6 +25,9 @@ class DialogueSession:
         self.dialogue_history: List[ChatMessage] = []
         self.created_at = datetime.now()
         self.is_active = True
+        # 会话绑定的模型服务与名称（开始对话时设定）
+        self.ai_service = None
+        self.model_name: Optional[str] = None
 
     def add_message(self, role: str, content: str):
         """添加消息到历史"""

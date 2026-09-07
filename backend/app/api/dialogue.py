@@ -1,17 +1,53 @@
 """
 对话相关API - WebSocket实时通信
+模型在开始对话时选定，绑定到会话
 """
 import json
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, delete
 from app.core.database import get_db, AsyncSessionLocal
-from app.models.models import CustomerRole, InsuranceProduct, ScoringDimension, ExcellentCase
+from app.core import model_store
+from app.models.models import CustomerRole, InsuranceProduct, ScoringDimension, ExcellentCase, PracticeRecord
 from app.models.schemas import DialogueStartRequest, ScoringRequest
-from app.services.ai_service import get_ai_service
+from app.services.ai_service import get_ai_service_by_name
 from app.services.websocket_service import websocket_manager
 
 router = APIRouter(prefix="/dialogue", tags=["对话"])
+
+
+async def _save_practice_record(session, score_result: dict):
+    """评分完成后把练习记录落库，失败不影响返回评分"""
+    try:
+        db = AsyncSessionLocal()
+        try:
+            record = PracticeRecord(
+                role_id=session.role_id,
+                product_id=session.product_id,
+                dialogue_data=[
+                    {"role": m.role, "content": m.content}
+                    for m in session.dialogue_history
+                ],
+                score_data=score_result,
+                total_score=score_result.get("total_score"),
+            )
+            db.add(record)
+            await db.commit()
+        finally:
+            await db.close()
+    except Exception as e:
+        print(f"[ERROR] 练习记录保存失败: {e}")
+
+
+def _resolve_model_service(model_name: str = None):
+    """按名称取启用的模型服务；未指定名称时取第一个启用中的模型"""
+    if model_name:
+        return get_ai_service_by_name(model_name)
+    models = model_store.load_models()
+    for m in models:
+        if m.get("is_active"):
+            return get_ai_service_by_name(m["model_name"])
+    raise ValueError("尚未配置任何启用的模型，请先在管理后台添加")
 
 
 @router.post("/start")
@@ -22,6 +58,12 @@ async def start_dialogue(
     """
     开始对话 - 创建会话并获取AI首次回复
     """
+    # 模型校验最前：纯文件读，配置错误时给出最准确的报错
+    try:
+        ai_service = _resolve_model_service(request.model_name)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
     # 获取角色信息
     role_result = await db.execute(select(CustomerRole).where(CustomerRole.id == request.role_id))
     role = role_result.scalar_one_or_none()
@@ -60,6 +102,9 @@ async def start_dialogue(
         role_data,
         product_data
     )
+    # 会话绑定模型，后续WebSocket与评分都用它
+    session.ai_service = ai_service
+    session.model_name = ai_service.model
 
     # 构建产品信息文本
     product_info = f"""产品名称：{product.name}
@@ -71,7 +116,6 @@ async def start_dialogue(
 
     # 生成AI首次问候
     try:
-        ai_service = get_ai_service()
         greeting = await ai_service.generate_dialogue_response(
             role_prompt=role.system_prompt,
             product_info=product_info,
@@ -138,8 +182,7 @@ async def websocket_dialogue(websocket: WebSocket, session_id: str):
 
                 # 生成AI回复
                 try:
-                    ai_service = get_ai_service()
-                    ai_reply = await ai_service.generate_dialogue_response(
+                    ai_reply = await session.ai_service.generate_dialogue_response(
                         role_prompt=role_prompt,
                         product_info=product_info,
                         dialogue_history=session.dialogue_history,
@@ -175,7 +218,6 @@ async def websocket_dialogue(websocket: WebSocket, session_id: str):
                 # 调用评分服务
                 try:
                     print("[DEBUG] 开始AI评分流程...")
-                    ai_service = get_ai_service()
 
                     # 从数据库获取评分维度配置
                     db = AsyncSessionLocal()
@@ -201,9 +243,9 @@ async def websocket_dialogue(websocket: WebSocket, session_id: str):
                     ])
                     print(f"[DEBUG] 对话文本长度: {len(dialogue_text)}字符")
 
-                    # 调用AI评分
+                    # 调用AI评分（使用会话绑定的模型）
                     print("[DEBUG] 调用AI评分服务...")
-                    score_result = await ai_service.generate_scoring(
+                    score_result = await session.ai_service.generate_scoring(
                         dialogue_text=dialogue_text,
                         role_name=session.role_data.get("name", ""),
                         product_name=session.product_data.get("name", ""),
@@ -219,6 +261,9 @@ async def websocket_dialogue(websocket: WebSocket, session_id: str):
                         "type": "score",
                         "data": score_result
                     })
+
+                    # 练习记录落库
+                    await _save_practice_record(session, score_result)
 
                     print("[DEBUG] 评分结果已发送")
 
@@ -276,7 +321,12 @@ async def score_dialogue(
     ])
 
     try:
-        ai_service = get_ai_service()
+        # 备用评分通道：优先取会话绑定的模型，会话已失效则回退第一个启用模型
+        session = websocket_manager.get_session(request.session_id)
+        if session and getattr(session, "ai_service", None):
+            ai_service = session.ai_service
+        else:
+            ai_service = _resolve_model_service(None)
         score_result = await ai_service.generate_scoring(
             dialogue_text=dialogue_text,
             role_name=role.name if role else "",
@@ -285,9 +335,64 @@ async def score_dialogue(
             scoring_prompt=""
         )
 
+        # 练习记录落库（会话存在时）
+        if session:
+            await _save_practice_record(session, score_result)
+
         return score_result
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"评分失败: {str(e)}")
 
-# Bug#1 fix: 使用数据库中的评分维度配置 (已修复)
+
+@router.get("/records")
+async def get_practice_records(
+    limit: int = 50,
+    offset: int = 0,
+    db: AsyncSession = Depends(get_db)
+):
+    """练习记录列表（倒序，带角色和产品名称）"""
+    from sqlalchemy import func
+
+    records_result = await db.execute(
+        select(PracticeRecord)
+        .order_by(PracticeRecord.created_at.desc(), PracticeRecord.id.desc())
+        .offset(offset)
+        .limit(limit)
+    )
+    records = records_result.scalars().all()
+
+    # 关联名称映射
+    roles_result = await db.execute(select(CustomerRole))
+    products_result = await db.execute(select(InsuranceProduct))
+    role_names = {r.id: r.name for r in roles_result.scalars().all()}
+    product_names = {p.id: p.name for p in products_result.scalars().all()}
+
+    total_result = await db.execute(select(func.count(PracticeRecord.id)))
+    total = total_result.scalar() or 0
+
+    return {
+        "total": total,
+        "items": [
+            {
+                "id": r.id,
+                "role_id": r.role_id,
+                "product_id": r.product_id,
+                "role_name": role_names.get(r.role_id, f"角色#{r.role_id}"),
+                "product_name": product_names.get(r.product_id, f"产品#{r.product_id}"),
+                "total_score": r.total_score,
+                "dialogue_data": r.dialogue_data or [],
+                "score_data": r.score_data or {},
+                "created_at": r.created_at.isoformat() if r.created_at else None,
+            }
+            for r in records
+        ],
+    }
+
+
+@router.delete("/records")
+async def clear_practice_records(db: AsyncSession = Depends(get_db)):
+    """清空全部练习记录"""
+    await db.execute(delete(PracticeRecord))
+    await db.commit()
+    return {"message": "练习记录已清空"}

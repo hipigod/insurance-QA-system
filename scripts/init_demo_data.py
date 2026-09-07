@@ -4,24 +4,26 @@
 """
 import asyncio
 import sys
-import os
+from pathlib import Path
 
 # 添加backend目录到Python路径
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'backend'))
+BASE_DIR = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(BASE_DIR / "backend"))
 
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import AsyncSessionLocal, init_db
+from sqlalchemy import delete
 from app.models.models import CustomerRole, InsuranceProduct, ScoringDimension
 
 
 async def init_demo_data():
     """初始化演示数据"""
-    print("🔄 正在初始化数据库...")
+    print("[INFO] 正在初始化数据库...")
     await init_db()
 
     async with AsyncSessionLocal() as session:
         # ============ 创建客户角色 ============
-        print("📝 创建客户角色...")
+        print("[INFO] 创建客户角色...")
 
         roles = [
             CustomerRole(
@@ -163,10 +165,10 @@ async def init_demo_data():
         for role in roles:
             session.add(role)
 
-        print(f"   ✅ 创建了 {len(roles)} 个客户角色")
+        print(f"   [OK] 创建了 {len(roles)} 个客户角色")
 
         # ============ 创建保险产品 ============
-        print("📝 创建保险产品...")
+        print("[INFO] 创建保险产品...")
 
         products = [
             InsuranceProduct(
@@ -251,99 +253,101 @@ async def init_demo_data():
         for product in products:
             session.add(product)
 
-        print(f"   ✅ 创建了 {len(products)} 个保险产品")
+        print(f"   [OK] 创建了 {len(products)} 个保险产品")
 
         # ============ 创建评分维度 ============
-        print("📝 创建评分维度...")
+        print("[INFO] 创建评分维度...")
+
+        await session.execute(delete(ScoringDimension))
 
         dimensions = [
             ScoringDimension(
-                name="沟通能力",
-                description="语言表达、倾听能力、共情能力、回应及时性",
-                weight=25.0,
-                evaluation_prompt="""请评估销售人员的沟通能力：
+                name="需求挖掘",
+                description="需求挖掘的深入程度与准确性",
+                weight=20.0,
+                evaluation_prompt="""请评估销售人员的需求挖掘能力：
 
 评估要点：
-1. 语言表达是否清晰流畅，有无语病或表达不清
-2. 是否善于倾听客户需求，是否经常打断客户
-3. 是否能够共情客户，理解客户的担忧和顾虑
-4. 回应是否及时恰当，能否准确回应客户问题
+1. 提问是否有层次，能否引导客户表达真实需求
+2. 是否认真倾听并及时确认客户需求
+3. 是否识别客户的隐性担忧与痛点
+4. 推荐是否基于客户需求进行匹配
 
 优秀标准：
-- 表达清晰流畅，用语专业但不晦涩
-- 善于倾听，能准确捕捉客户真实需求
-- 能够站在客户角度思考，展现同理心
-- 回应及时准确，不回避客户问题"""
+- 提问清晰有引导性
+- 能复述并确认客户需求
+- 能挖掘出潜在痛点
+- 推荐与需求高度匹配"""
             ),
             ScoringDimension(
-                name="有效营销",
-                description="需求挖掘、价值传递、异议处理、促成能力",
+                name="产品说明",
+                description="产品介绍的准确性、清晰度与针对性",
                 weight=25.0,
-                evaluation_prompt="""请评估销售人员的有效营销能力：
+                evaluation_prompt="""请评估销售人员的产品说明能力：
 
 评估要点：
-1. 是否准确挖掘客户的真实需求和痛点
-2. 是否有效传递产品价值，能否说明产品好处
-3. 处理客户异议的策略是否恰当，说服效果如何
-4. 是否尝试促成，促成时机把握如何
+1. 产品信息是否准确，无夸大或误导
+2. 是否用通俗语言解释专业条款
+3. 是否围绕客户需求突出产品价值
+4. 是否有案例或数据支撑说明
 
 优秀标准：
-- 能通过提问深入了解客户真实需求
-- 能用具体案例和数据说明产品价值
-- 异议处理有理有据，能有效化解客户疑虑
-- 促成时机把握恰当，能自然引导客户下单"""
+- 表达清晰易懂，逻辑结构清楚
+- 条款解释准确，重点突出
+- 价值阐述紧扣客户需求
+- 说明有例证，可信度高"""
             ),
             ScoringDimension(
-                name="产品熟练度",
-                description="产品知识准确性、条款解释能力、产品推荐匹配度",
-                weight=25.0,
-                evaluation_prompt="""请评估销售人员的产品熟练度：
-
-评估要点：
-1. 产品知识是否准确，有无错误介绍
-2. 条款解释是否清楚，能否用简单语言说明复杂条款
-3. 推荐的产品是否匹配客户需求
-4. 对产品优势、限制、注意事项是否了解
-
-优秀标准：
-- 产品知识掌握扎实，数据准确无误
-- 能用通俗语言解释专业条款
-- 能根据客户需求推荐合适产品
-- 对产品细节了如指掌，回答专业自信"""
-            ),
-            ScoringDimension(
-                name="异议处理能力",
-                description="异议识别准确性、应对策略恰当性、说服效果",
+                name="异议处理",
+                description="异议识别准确性、应对策略与说服效果",
                 weight=25.0,
                 evaluation_prompt="""请评估销售人员的异议处理能力：
 
 评估要点：
 1. 是否准确识别客户提出的异议类型（价格、信任、需求、竞品等）
 2. 应对策略是否恰当，能否对症下药
-3. 说服效果如何，能否有效化解客户疑虑
-4. 是否能将异议转化为销售机会
+3. 说服是否有理有据，能否化解疑虑
+4. 是否能将异议转化为进一步沟通机会
 
 优秀标准：
-- 能准确识别各种异议类型，不混淆
-- 针对不同异议采用恰当的应对策略
-- 说服有理有据，能真正化解客户疑虑
-- 不回避异议，能将异议转化为销售契机"""
+- 能准确识别异议类型
+- 应对策略得当，逻辑清晰
+- 说服有效，客户疑虑明显减少
+- 异议处理后能推进对话"""
+            ),
+            ScoringDimension(
+                name="促成能力",
+                description="促成时机把握与成交引导能力",
+                weight=30.0,
+                evaluation_prompt="""请评估销售人员的促成能力：
+
+评估要点：
+1. 是否能判断客户的决策阶段
+2. 促成动作是否自然、适时
+3. 是否能明确引导下一步行动
+4. 面对犹豫是否能给出合理推动方式
+
+优秀标准：
+- 把握促成时机，推进自然
+- 引导明确，减少客户犹豫
+- 能给出可执行的下一步
+- 推动方式有礼有据"""
             )
         ]
 
         for dimension in dimensions:
             session.add(dimension)
 
-        print(f"   ✅ 创建了 {len(dimensions)} 个评分维度")
+        print(f"   [OK] 创建了 {len(dimensions)} 个评分维度")
 
         # 提交所有数据
         await session.commit()
 
-        print("\n🎉 演示数据初始化完成！")
+        print("\n[OK] 演示数据初始化完成！")
         print(f"   - 客户角色: {len(roles)} 个")
         print(f"   - 保险产品: {len(products)} 个")
         print(f"   - 评分维度: {len(dimensions)} 个")
-        print("\n✅ 现在可以启动系统了！")
+        print("\n[OK] 现在可以启动系统了！")
 
 
 if __name__ == "__main__":

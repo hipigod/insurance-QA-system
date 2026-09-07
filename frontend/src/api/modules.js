@@ -95,6 +95,16 @@ export const submitScore = (data) => {
   return api.post('/dialogue/score', data)
 }
 
+// 练习记录列表
+export const getPracticeRecords = (params = {}) => {
+  return api.get('/dialogue/records', { params })
+}
+
+// 清空练习记录
+export const clearPracticeRecords = () => {
+  return api.delete('/dialogue/records')
+}
+
 // ============ 模型配置管理 ============
 // 获取所有模型配置
 export const getModels = () => {
@@ -116,7 +126,7 @@ export const deleteModel = (id) => {
   return api.delete(`/models/${id}`)
 }
 
-// 激活模型
-export const activateModel = (id) => {
-  return api.post(`/models/${id}/activate`)
+// 测试模型连通性
+export const testModel = (id) => {
+  return api.post(`/models/${id}/test`)
 }

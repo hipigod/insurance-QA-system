@@ -5,21 +5,21 @@
         <el-icon><Plus /></el-icon>
         新增模型
       </el-button>
+      <span class="header-tip">配置保存到服务器 data/model_config.json，练习开始时可选</span>
     </div>
 
     <el-table :data="models" style="width: 100%" v-loading="loading">
-      <el-table-column prop="id" label="ID" width="60" />
-      <el-table-column prop="model_name" label="模型名称" width="200" />
-      <el-table-column prop="provider" label="提供商" width="150" />
+      <el-table-column prop="model_name" label="模型名称" min-width="160" />
+      <el-table-column prop="provider" label="提供商" width="140" />
       <el-table-column prop="api_base" label="API地址" show-overflow-tooltip />
-      <el-table-column label="状态" width="100">
+      <el-table-column label="状态" width="90">
         <template #default="{ row }">
           <el-tag :type="row.is_active ? 'success' : 'info'">
             {{ row.is_active ? '启用' : '禁用' }}
           </el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="操作" width="220" fixed="right">
+      <el-table-column label="操作" width="280" fixed="right">
         <template #default="{ row }">
           <el-button size="small" @click="showDialog(row)">编辑</el-button>
           <el-button
@@ -28,6 +28,9 @@
             @click="toggleActive(row)"
           >
             {{ row.is_active ? '禁用' : '启用' }}
+          </el-button>
+          <el-button size="small" type="primary" plain :loading="testingId === row.id" @click="handleTest(row)">
+            测试
           </el-button>
           <el-button size="small" type="danger" @click="handleDelete(row.id)">删除</el-button>
         </template>
@@ -41,13 +44,13 @@
       width="600px"
     >
       <el-form :model="form" label-width="100px">
-        <el-form-item label="模型名称">
-          <el-input v-model="form.model_name" placeholder="例如: 通义千问" />
+        <el-form-item label="模型名称" required>
+          <el-input v-model="form.model_name" placeholder="模型ID，例如: qwen-plus / deepseek-chat" />
         </el-form-item>
         <el-form-item label="提供商">
-          <el-input v-model="form.provider" placeholder="例如: 阿里云" />
+          <el-input v-model="form.provider" placeholder="例如: 阿里云 / DeepSeek" />
         </el-form-item>
-        <el-form-item label="API Key">
+        <el-form-item label="API Key" required>
           <el-input v-model="form.api_key" type="password" placeholder="请输入API Key" show-password />
         </el-form-item>
         <el-form-item label="API地址">
@@ -77,6 +80,7 @@ const loading = ref(false)
 const saving = ref(false)
 const dialogVisible = ref(false)
 const form = ref({})
+const testingId = ref(null)
 
 // 加载模型列表
 const loadData = async () => {
@@ -95,7 +99,15 @@ const loadData = async () => {
 // 显示对话框
 const showDialog = (model = null) => {
   if (model) {
-    form.value = { ...model }
+    // 编辑：回填除api_key外的字段（后端不回传密钥）
+    form.value = {
+      id: model.id,
+      model_name: model.model_name,
+      provider: model.provider || '',
+      api_key: '',
+      api_base: model.api_base || '',
+      is_active: model.is_active
+    }
   } else {
     form.value = {
       model_name: '',
@@ -110,14 +122,28 @@ const showDialog = (model = null) => {
 
 // 保存模型
 const handleSave = async () => {
+  if (!form.value.model_name || !form.value.model_name.trim()) {
+    ElMessage.warning('请填写模型名称')
+    return
+  }
+
+  const payload = { ...form.value }
+  delete payload.id
+
   try {
     saving.value = true
 
     if (form.value.id) {
-      await api.updateModel(form.value.id, form.value)
+      // 编辑时api_key留空表示不修改
+      if (!payload.api_key) delete payload.api_key
+      await api.updateModel(form.value.id, payload)
       ElMessage.success('更新成功')
     } else {
-      await api.createModel(form.value)
+      if (!payload.api_key) {
+        ElMessage.warning('请填写API Key')
+        return
+      }
+      await api.createModel(payload)
       ElMessage.success('创建成功')
     }
 
@@ -154,12 +180,31 @@ const handleDelete = async (id) => {
 // 切换启用状态
 const toggleActive = async (model) => {
   try {
-    await api.activateModel(model.id)
-    ElMessage.success(model.is_active ? '已禁用' : '已启用')
+    const nextActive = !model.is_active
+    await api.updateModel(model.id, { is_active: nextActive })
+    ElMessage.success(nextActive ? '已启用' : '已禁用')
     await loadData()
   } catch (error) {
     console.error('切换状态失败:', error)
     ElMessage.error('操作失败')
+  }
+}
+
+// 测试连通性
+const handleTest = async (model) => {
+  try {
+    testingId.value = model.id
+    const res = await api.testModel(model.id)
+    if (res && res.success) {
+      ElMessage.success(`${model.model_name} 连接成功`)
+    } else {
+      ElMessage.error(`${model.model_name} 连接失败，请检查配置`)
+    }
+  } catch (error) {
+    console.error('测试失败:', error)
+    ElMessage.error('测试请求失败')
+  } finally {
+    testingId.value = null
   }
 }
 
@@ -177,5 +222,13 @@ defineExpose({
 <style scoped>
 .tab-header {
   margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.header-tip {
+  font-size: 12px;
+  color: #909399;
 }
 </style>

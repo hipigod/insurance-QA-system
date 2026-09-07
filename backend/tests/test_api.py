@@ -23,12 +23,12 @@ class TestResult:
 
     def add_pass(self, test_name):
         self.passed += 1
-        print(f"✅ {test_name}")
+        print(f"[PASS] {test_name}")
 
     def add_fail(self, test_name, error):
         self.failed += 1
         self.errors.append((test_name, error))
-        print(f"❌ {test_name}")
+        print(f"[FAIL] {test_name}")
         print(f"   错误: {error}")
 
     def summary(self):
@@ -86,7 +86,7 @@ async def test_api_data_integrity(result: TestResult):
         async with AsyncSessionLocal() as db:
             # 检查角色数据完整性
             roles_result = await db.execute(select(CustomerRole))
-            role = roles_result.scalar_one_or_none()
+            role = roles_result.scalars().first()
 
             if role and role.system_prompt:
                 result.add_pass("TC004: 角色数据完整性 - 包含提示词")
@@ -95,7 +95,7 @@ async def test_api_data_integrity(result: TestResult):
 
             # 检查产品数据完整性
             products_result = await db.execute(select(InsuranceProduct))
-            product = products_result.scalar_one_or_none()
+            product = products_result.scalars().first()
 
             if product and product.name and product.description:
                 result.add_pass("TC005: 产品数据完整性 - 包含名称和描述")
@@ -106,7 +106,11 @@ async def test_api_data_integrity(result: TestResult):
             dimensions_result = await db.execute(select(ScoringDimension))
             dimensions = dimensions_result.scalars().all()
 
-            total_weight = sum(d.weight for d in dimensions)
+            dimension_weights = {}
+            for dim in dimensions:
+                dimension_weights[dim.name] = dim.weight
+
+            total_weight = sum(dimension_weights.values())
             if abs(total_weight - 100) < 0.1:
                 result.add_pass("TC006: 评分维度权重总和为100%")
             else:
@@ -117,25 +121,33 @@ async def test_api_data_integrity(result: TestResult):
 
 
 async def test_ai_service(result: TestResult):
-    """测试3: AI服务配置"""
+    """测试3: AI服务配置（模型配置来自 data/model_config.json）"""
     try:
-        from app.core.config import settings
+        from app.core import model_store
 
-        # 检查配置
-        if settings.DEFAULT_MODEL:
-            result.add_pass(f"TC007: AI模型配置 - {settings.DEFAULT_MODEL}")
+        # 检查模型配置文件
+        models = model_store.load_models()
+        if models:
+            result.add_pass(f"TC007: 模型配置文件 - {len(models)}个模型")
         else:
-            result.add_fail("TC007: AI模型配置", "未设置模型")
+            result.add_fail("TC007: 模型配置文件", "无模型配置，请在管理后台添加")
 
-        if settings.MODEL_API_KEY:
-            result.add_pass("TC008: API Key配置 - 已配置")
+        active_models = [m for m in models if m.get("is_active")]
+        if active_models:
+            result.add_pass(f"TC008: 启用中的模型 - {len(active_models)}个")
         else:
-            result.add_fail("TC008: API Key配置", "未设置API Key")
+            result.add_fail("TC008: 启用中的模型", "无启用中的模型")
 
-        # 测试AI服务初始化
+        # 测试AI服务初始化（按第一个启用模型）
         try:
-            ai_service = AIService()
+            ai_service = AIService(
+                api_key=active_models[0]["api_key"],
+                base_url=active_models[0].get("api_base") or None,
+                model=active_models[0]["model_name"],
+            )
             result.add_pass("TC009: AI服务初始化")
+        except IndexError:
+            result.add_fail("TC009: AI服务初始化", "无启用模型可初始化")
         except Exception as e:
             result.add_fail("TC009: AI服务初始化", str(e))
 
@@ -145,7 +157,7 @@ async def test_ai_service(result: TestResult):
 
 async def run_all_tests():
     """运行所有测试"""
-    print("🧪 开始自动化测试...")
+    print("[INFO] 开始自动化测试...")
     print(f"{'='*50}\n")
 
     result = TestResult()

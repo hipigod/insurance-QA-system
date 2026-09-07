@@ -175,12 +175,9 @@ const endDialogue = () => {
 }
 
 const connectWebSocket = () => {
-  // 动态构建WebSocket URL，自动适配开发/生产环境
-  const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
-  const host = window.location.host
-  const wsUrl = `${protocol}//${host}/api/dialogue/ws/${sessionId.value}`
-
-  console.log('正在连接WebSocket:', wsUrl)
+  // 按当前页面协议推导WS地址：https页面必须用wss，同域名走nginx代理
+  const wsProtocol = window.location.protocol === 'https:' ? 'wss' : 'ws'
+  const wsUrl = `${wsProtocol}://${window.location.host}/api/dialogue/ws/${sessionId.value}`
   websocket = new WebSocket(wsUrl)
 
   websocket.onopen = () => {

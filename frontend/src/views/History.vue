@@ -19,8 +19,8 @@
     </div>
 
     <!-- 主体内容 -->
-    <el-main class="main-content">
-      <div v-if="historyList.length === 0" class="empty-state">
+    <el-main class="main-content" v-loading="loading">
+      <div v-if="historyList.length === 0 && !loading" class="empty-state">
         <el-empty description="暂无练习记录">
           <el-button type="primary" @click="startPractice">开始练习</el-button>
         </el-empty>
@@ -56,15 +56,30 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { getPracticeRecords, clearPracticeRecords } from '@/api/modules'
 
 const router = useRouter()
 
 // 数据
 const historyList = ref([])
+const loading = ref(false)
 
 // 方法
 const goBack = () => {
   router.push('/')
+}
+
+const loadHistory = async () => {
+  try {
+    loading.value = true
+    const res = await getPracticeRecords({ limit: 100 })
+    historyList.value = res.items || []
+  } catch (error) {
+    console.error('加载练习记录失败:', error)
+    ElMessage.error('加载练习记录失败')
+  } finally {
+    loading.value = false
+  }
 }
 
 const formatTime = (timeStr) => {
@@ -108,24 +123,21 @@ const clearHistory = () => {
       cancelButtonText: '取消',
       type: 'warning'
     }
-  ).then(() => {
-    localStorage.removeItem('practice_history')
-    historyList.value = []
-    ElMessage.success('已清空历史记录')
+  ).then(async () => {
+    try {
+      await clearPracticeRecords()
+      historyList.value = []
+      ElMessage.success('已清空历史记录')
+    } catch (error) {
+      console.error('清空失败:', error)
+      ElMessage.error('清空失败')
+    }
   }).catch(() => {})
 }
 
 // 生命周期
 onMounted(() => {
-  const history = localStorage.getItem('practice_history')
-
-  if (history) {
-    try {
-      historyList.value = JSON.parse(history)
-    } catch (e) {
-      console.error('解析历史记录失败:', e)
-    }
-  }
+  loadHistory()
 })
 </script>
 

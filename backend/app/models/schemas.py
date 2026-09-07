@@ -85,6 +85,7 @@ class DialogueStartRequest(BaseModel):
     """开始对话请求"""
     role_id: int = Field(..., description="客户角色ID")
     product_id: int = Field(..., description="保险产品ID")
+    model_name: Optional[str] = Field(None, description="模型名称，不传则用第一个启用中的模型")
 
 
 class DialogueMessage(BaseModel):
@@ -183,6 +184,7 @@ class ModelConfigBase(BaseModel):
     provider: Optional[str] = Field(None, description="提供商")
     api_key: str = Field(..., description="API Key")
     api_base: Optional[str] = Field(None, description="API Base URL")
+    is_active: bool = Field(True, description="是否启用")
 
 
 class ModelConfigCreate(ModelConfigBase):
@@ -196,15 +198,18 @@ class ModelConfigUpdate(BaseModel):
     provider: Optional[str] = None
     api_key: Optional[str] = None
     api_base: Optional[str] = None
+    is_active: Optional[bool] = None
 
 
 class ModelConfigResponse(BaseModel):
     """模型配置响应"""
-    id: int
+    id: str
     model_name: str
-    provider: Optional[str]
-    is_active: int
-    created_at: datetime
+    provider: Optional[str] = None
+    api_base: Optional[str] = None
+    is_active: bool
+    created_at: Optional[str] = None
+    updated_at: Optional[str] = None
 
     class Config:
         from_attributes = True

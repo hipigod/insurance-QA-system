@@ -65,6 +65,37 @@
         </div>
       </el-card>
 
+      <!-- 模型选择卡片 -->
+      <el-card class="selection-card" shadow="hover">
+        <template #header>
+          <div class="card-header">
+            <el-icon><Cpu /></el-icon>
+            <span>选择对话模型</span>
+          </div>
+        </template>
+
+        <div class="model-list" v-loading="loadingModels">
+          <div
+            v-if="activeModels.length === 0 && !loadingModels"
+            class="model-empty"
+          >
+            暂无可用模型，请到
+            <router-link to="/admin" class="empty-link">管理后台</router-link>
+            配置
+          </div>
+          <div
+            v-for="model in activeModels"
+            :key="model.id"
+            class="model-item"
+            :class="{ selected: selectedModel?.id === model.id }"
+            @click="selectModel(model)"
+          >
+            <div class="model-name">{{ model.model_name }}</div>
+            <div class="model-desc">{{ model.provider || '自定义模型' }}</div>
+          </div>
+        </div>
+      </el-card>
+
       <!-- 开始按钮 -->
       <div class="action-area">
         <el-button
@@ -78,7 +109,7 @@
           开始对话练习
         </el-button>
         <p class="tip" v-if="!canStart">
-          请先选择客户角色和保险产品
+          请先选择客户角色、保险产品和对话模型
         </p>
       </div>
 
@@ -101,21 +132,28 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { getRoles, getProducts, startDialogue } from '@/api/modules'
+import { Cpu } from '@element-plus/icons-vue'
+import { getRoles, getProducts, getModels, startDialogue } from '@/api/modules'
 
 const router = useRouter()
 
 // 数据
 const roles = ref([])
 const products = ref([])
+const models = ref([])
 const selectedRole = ref(null)
 const selectedProduct = ref(null)
+const selectedModel = ref(null)
 const loading = ref(true)
+const loadingModels = ref(true)
 const starting = ref(false)
+
+// 仅展示启用中的模型
+const activeModels = computed(() => models.value.filter(m => m.is_active))
 
 // 计算属性
 const canStart = computed(() => {
-  return selectedRole.value && selectedProduct.value
+  return selectedRole.value && selectedProduct.value && selectedModel.value
 })
 
 // 方法
@@ -137,6 +175,10 @@ const selectProduct = (product) => {
   selectedProduct.value = product
 }
 
+const selectModel = (model) => {
+  selectedModel.value = model
+}
+
 const startPractice = async () => {
   if (!canStart.value) return
 
@@ -145,7 +187,8 @@ const startPractice = async () => {
   try {
     const response = await startDialogue({
       role_id: selectedRole.value.id,
-      product_id: selectedProduct.value.id
+      product_id: selectedProduct.value.id,
+      model_name: selectedModel.value.model_name
     })
 
     // 保存会话信息到 sessionStorage
@@ -167,19 +210,22 @@ const startPractice = async () => {
 // 生命周期
 onMounted(async () => {
   try {
-    // 并行加载角色和产品列表
-    const [rolesData, productsData] = await Promise.all([
+    // 并行加载角色、产品和模型列表
+    const [rolesData, productsData, modelsData] = await Promise.all([
       getRoles(),
-      getProducts()
+      getProducts(),
+      getModels().catch(() => [])
     ])
 
     roles.value = rolesData
     products.value = productsData
+    models.value = modelsData
 
   } catch (error) {
     ElMessage.error('加载数据失败')
   } finally {
     loading.value = false
+    loadingModels.value = false
   }
 })
 </script>
@@ -227,14 +273,28 @@ onMounted(async () => {
 }
 
 .role-list,
-.product-list {
+.product-list,
+.model-list {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 16px;
 }
 
+.model-empty {
+  grid-column: 1 / -1;
+  text-align: center;
+  color: #909399;
+  padding: 24px 0;
+  font-size: 14px;
+}
+
+.empty-link {
+  color: #667eea;
+}
+
 .role-item,
-.product-item {
+.product-item,
+.model-item {
   padding: 16px;
   border: 2px solid #e4e7ed;
   border-radius: 8px;
@@ -243,27 +303,31 @@ onMounted(async () => {
 }
 
 .role-item:hover,
-.product-item:hover {
+.product-item:hover,
+.model-item:hover {
   border-color: #667eea;
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
 }
 
 .role-item.selected,
-.product-item.selected {
+.product-item.selected,
+.model-item.selected {
   border-color: #667eea;
   background-color: #f0f2ff;
 }
 
 .role-name,
-.product-name {
+.product-name,
+.model-name {
   font-weight: bold;
   font-size: 16px;
   margin-bottom: 8px;
 }
 
 .role-desc,
-.product-desc {
+.product-desc,
+.model-desc {
   color: #606266;
   font-size: 14px;
   margin-bottom: 12px;
@@ -338,7 +402,8 @@ onMounted(async () => {
   }
 
   .role-list,
-  .product-list {
+  .product-list,
+  .model-list {
     grid-template-columns: 1fr;
   }
 

@@ -203,7 +203,7 @@ const viewHistory = () => {
 }
 
 // 生命周期
-onMounted(() => {
+onMounted(async () => {
   // 从sessionStorage获取数据
   const scoreData = sessionStorage.getItem('score_result')
   const historyData = sessionStorage.getItem('dialogue_history')
@@ -217,27 +217,30 @@ onMounted(() => {
   scoreResult.value = JSON.parse(scoreData)
   dialogueHistory.value = JSON.parse(historyData)
 
-  // 保存到LocalStorage作为历史记录
-  const record = {
-    id: Date.now(),
-    role_name: sessionStorage.getItem('role_name'),
-    product_name: sessionStorage.getItem('product_name'),
-    total_score: scoreResult.value.total_score,
-    dialogue_data: dialogueHistory.value,
-    score_data: scoreResult.value,
-    created_at: new Date().toISOString()
+  // 记录已由后端在评分时落库（practice_records表）
+  // 这里仅保留localStorage兜底：从历史页回看时不重复写入
+  if (sessionStorage.getItem('from_history') !== 'true') {
+    try {
+      const record = {
+        id: Date.now(),
+        role_name: sessionStorage.getItem('role_name'),
+        product_name: sessionStorage.getItem('product_name'),
+        total_score: scoreResult.value.total_score,
+        dialogue_data: dialogueHistory.value,
+        score_data: scoreResult.value,
+        created_at: new Date().toISOString()
+      }
+      const history = JSON.parse(localStorage.getItem('practice_history') || '[]')
+      history.unshift(record)
+      // 兜底最多留50条，后端记录不受限
+      if (history.length > 50) {
+        history.splice(50)
+      }
+      localStorage.setItem('practice_history', JSON.stringify(history))
+    } catch (e) {
+      console.error('本地兜底记录失败:', e)
+    }
   }
-
-  // 获取现有历史记录
-  const history = JSON.parse(localStorage.getItem('practice_history') || '[]')
-  history.unshift(record)
-
-  // 只保留最近10条
-  if (history.length > 10) {
-    history.splice(10)
-  }
-
-  localStorage.setItem('practice_history', JSON.stringify(history))
 })
 </script>
 

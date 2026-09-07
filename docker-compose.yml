@@ -15,10 +15,7 @@ services:
       - APP_VERSION=1.2.0
       - DEBUG=False
 
-      # AI模型配置 - 请在.env文件中配置
-      - DEFAULT_MODEL=${DEFAULT_MODEL:-deepseek-chat}
-      - MODEL_API_KEY=${MODEL_API_KEY}
-      - MODEL_API_BASE=${MODEL_API_BASE:-https://api.deepseek.com/v1}
+      # 大模型配置统一在管理后台维护，落盘 /app/data/model_config.json（见下方卷挂载）
 
       # 对话配置
       - AI_RESPONSE_TIMEOUT=${AI_RESPONSE_TIMEOUT:-25}

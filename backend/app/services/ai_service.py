@@ -1,37 +1,35 @@
 """
 AI模型服务 - 处理与大模型的交互
+模型配置来自 data/model_config.json（管理后台维护）
 """
 import json
 import asyncio
-from typing import List, Dict, Optional
+from typing import List, Dict
 from openai import AsyncOpenAI
 from app.core.config import settings
 from app.models.schemas import ChatMessage
 
 
 class AIService:
-    """AI服务类"""
+    """AI服务类 - 按传入的模型配置实例化，支持多模型并存"""
 
-    def __init__(
-        self,
-        api_key: str = None,
-        base_url: str = None,
-        model: str = None
-    ):
+    def __init__(self, api_key: str, base_url: str = None, model: str = None):
         """
         初始化AI服务
 
         Args:
-            api_key: API密钥
-            base_url: API基础URL
+            api_key: API密钥（必填）
+            base_url: API基础URL（兼容OpenAI协议的接口地址）
             model: 模型名称
         """
-        self.api_key = api_key or settings.MODEL_API_KEY
-        self.base_url = base_url or settings.MODEL_API_BASE
-        self.model = model or settings.DEFAULT_MODEL
-
-        if not self.api_key:
+        if not api_key:
             raise ValueError("API Key未配置")
+        if not model:
+            raise ValueError("模型名称未配置")
+
+        self.api_key = api_key
+        self.base_url = base_url or "https://api.openai.com/v1"
+        self.model = model
 
         self.client = AsyncOpenAI(
             api_key=self.api_key,
@@ -274,19 +272,36 @@ class AIService:
             return False
 
 
-# 全局AI服务实例
-_ai_service: Optional[AIService] = None
+# 按模型名称缓存的AI服务实例池: {model_name: AIService}
+_service_pool: Dict[str, AIService] = {}
 
 
-def get_ai_service() -> AIService:
-    """获取AI服务实例"""
-    global _ai_service
-    if _ai_service is None:
-        _ai_service = AIService()
-    return _ai_service
+def get_ai_service_by_name(model_name: str) -> AIService:
+    """
+    按模型名称获取AI服务实例
+    配置文件中不存在该模型或未启用时抛异常
+    """
+    from app.core import model_store
+
+    cached = _service_pool.get(model_name)
+    if cached is not None:
+        return cached
+
+    config = model_store.get_model_by_name(model_name)
+    if config is None:
+        raise ValueError(f"模型配置不存在: {model_name}")
+    if not config.get("is_active"):
+        raise ValueError(f"模型已禁用: {model_name}")
+
+    service = AIService(
+        api_key=config["api_key"],
+        base_url=config.get("api_base") or None,
+        model=config["model_name"],
+    )
+    _service_pool[model_name] = service
+    return service
 
 
-def reset_ai_service(api_key: str = None, base_url: str = None, model: str = None):
-    """重置AI服务实例"""
-    global _ai_service
-    _ai_service = AIService(api_key=api_key, base_url=base_url, model=model)
+def clear_service_pool():
+    """清空服务实例池（模型配置变更后调用，下次取用时重建）"""
+    _service_pool.clear()

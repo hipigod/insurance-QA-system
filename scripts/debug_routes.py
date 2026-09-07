@@ -5,8 +5,10 @@ import sys
 import asyncio
 from pathlib import Path
 
-# 添加项目路径
-sys.path.insert(0, str(Path(__file__).parent))
+# 添加backend路径
+BASE_DIR = Path(__file__).resolve().parent.parent
+BACKEND_DIR = BASE_DIR / "backend"
+sys.path.insert(0, str(BACKEND_DIR))
 
 from main import app
 from fastapi.routing import APIRoute

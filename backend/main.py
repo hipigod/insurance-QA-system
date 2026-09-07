@@ -20,6 +20,11 @@ async def lifespan(app: FastAPI):
     os.makedirs(db_dir, exist_ok=True)
 
     await init_db()
+    # 旧数据库中的模型配置一次性迁移到 data/model_config.json
+    from app.core.model_store import migrate_from_db_if_needed
+    migrated = await migrate_from_db_if_needed()
+    if migrated:
+        print(f"[INFO] 已从数据库迁移 {migrated} 条模型配置到 model_config.json")
     try:
         print(f"🚀 {settings.APP_NAME} v{settings.APP_VERSION} 启动成功！")
         print(f"📍 API地址: http://{settings.HOST}:{settings.PORT}/docs")

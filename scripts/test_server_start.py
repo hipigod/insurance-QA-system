@@ -4,8 +4,10 @@
 import sys
 from pathlib import Path
 
-# 添加项目路径
-sys.path.insert(0, str(Path(__file__).parent))
+# 添加backend路径
+BASE_DIR = Path(__file__).resolve().parent.parent
+BACKEND_DIR = BASE_DIR / "backend"
+sys.path.insert(0, str(BACKEND_DIR))
 
 def test_startup():
     """测试启动时的路由加载"""
@@ -57,7 +59,7 @@ def test_startup():
 
     print("\n【步骤 5】检查 main.py 中的导入语句...")
     try:
-        with open('main.py', 'r', encoding='utf-8') as f:
+        with open(BACKEND_DIR / "main.py", 'r', encoding='utf-8') as f:
             content = f.read()
             if 'from app.api import' in content:
                 print("  ✓ 发现导入语句")
