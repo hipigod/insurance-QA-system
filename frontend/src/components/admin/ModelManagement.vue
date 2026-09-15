@@ -51,7 +51,12 @@
           <el-input v-model="form.provider" placeholder="例如: 阿里云 / DeepSeek" />
         </el-form-item>
         <el-form-item label="API Key" required>
-          <el-input v-model="form.api_key" type="password" placeholder="请输入API Key" show-password />
+          <el-input
+            v-model="form.api_key"
+            type="password"
+            :placeholder="form.id && form.api_key_masked ? `已保存 ${form.api_key_masked}，留空则不修改` : '请输入API Key'"
+            show-password
+          />
         </el-form-item>
         <el-form-item label="API地址">
           <el-input v-model="form.api_base" placeholder="例如: https://dashscope.aliyuncs.com/compatible-mode/v1" />
@@ -99,12 +104,13 @@ const loadData = async () => {
 // 显示对话框
 const showDialog = (model = null) => {
   if (model) {
-    // 编辑：回填除api_key外的字段（后端不回传密钥）
+    // 编辑：回填字段（api_key留空表示沿用，掩码仅作提示）
     form.value = {
       id: model.id,
       model_name: model.model_name,
       provider: model.provider || '',
       api_key: '',
+      api_key_masked: model.api_key_masked || '',
       api_base: model.api_base || '',
       is_active: model.is_active
     }
@@ -113,6 +119,7 @@ const showDialog = (model = null) => {
       model_name: '',
       provider: '',
       api_key: '',
+      api_key_masked: '',
       api_base: '',
       is_active: true
     }
@@ -129,12 +136,13 @@ const handleSave = async () => {
 
   const payload = { ...form.value }
   delete payload.id
+  delete payload.api_key_masked
 
   try {
     saving.value = true
 
     if (form.value.id) {
-      // 编辑时api_key留空表示不修改
+      // 编辑时api_key留空表示沿用已保存的密钥
       if (!payload.api_key) delete payload.api_key
       await api.updateModel(form.value.id, payload)
       ElMessage.success('更新成功')

@@ -14,13 +14,23 @@ from app.models.schemas import (
 router = APIRouter(prefix="/models", tags=["模型配置"])
 
 
+def _mask_key(key: str) -> str:
+    """API Key掩码：保留前4后4，中间打码"""
+    if not key:
+        return ""
+    if len(key) <= 8:
+        return "****"
+    return f"{key[:4]}****{key[-4:]}"
+
+
 def _to_response(m: dict) -> ModelConfigResponse:
-    """内部dict转响应模型（不回传api_key）"""
+    """内部dict转响应模型（api_key仅返回掩码）"""
     return ModelConfigResponse(
         id=m["id"],
         model_name=m["model_name"],
         provider=m.get("provider") or None,
         api_base=m.get("api_base") or None,
+        api_key_masked=_mask_key(m.get("api_key", "")),
         is_active=bool(m.get("is_active", True)),
         created_at=m.get("created_at", ""),
         updated_at=m.get("updated_at", ""),

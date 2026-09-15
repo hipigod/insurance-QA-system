@@ -207,6 +207,7 @@ class ModelConfigResponse(BaseModel):
     model_name: str
     provider: Optional[str] = None
     api_base: Optional[str] = None
+    api_key_masked: Optional[str] = None
     is_active: bool
     created_at: Optional[str] = None
     updated_at: Optional[str] = None
