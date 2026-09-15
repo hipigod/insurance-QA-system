@@ -64,13 +64,13 @@
         :rows="3"
         placeholder="输入您的回复..."
         @keydown.enter.prevent="sendMessage"
-        :disabled="thinking"
+        :disabled="thinking || dialogueEnded"
       />
       <el-button
         type="primary"
         @click="sendMessage"
         :loading="thinking"
-        :disabled="!userInput.trim()"
+        :disabled="!userInput.trim() || dialogueEnded"
       >
         发送
       </el-button>
@@ -93,6 +93,7 @@ const greeting = ref('')
 const messages = ref([])
 const userInput = ref('')
 const thinking = ref(false)
+const dialogueEnded = ref(false)
 const messagesRef = ref(null)
 
 let websocket = null
@@ -138,7 +139,7 @@ const addMessage = (role, content) => {
 
 const sendMessage = () => {
   const message = userInput.value.trim()
-  if (!message || thinking.value) return
+  if (!message || thinking.value || dialogueEnded.value) return
 
   // 添加用户消息
   addMessage('user', message)
@@ -195,8 +196,18 @@ const connectWebSocket = () => {
         thinking.value = true
       } else if (data.status === 'scoring') {
         thinking.value = true
+      } else if (data.status === 'hung_up') {
+        // 客户挂断：明确告知并锁定输入，随后自动进入评分
+        thinking.value = true
+        dialogueEnded.value = true
+        ElMessage({
+          type: 'warning',
+          message: '客户已挂断对话，正在生成评分报告...',
+          duration: 4000
+        })
       }
     } else if (data.type === 'score') {
+      thinking.value = false
       // 评分完成，保存数据并跳转
       sessionStorage.setItem('score_result', JSON.stringify(data.data))
       sessionStorage.setItem('dialogue_history', JSON.stringify(messages.value))
@@ -206,12 +217,18 @@ const connectWebSocket = () => {
       }, 1000)
     } else if (data.type === 'error') {
       thinking.value = false
-      ElMessage.error(data.message)
+      ElMessage({
+        type: 'error',
+        message: data.message,
+        duration: 6000,
+        showClose: true
+      })
     }
   }
 
   websocket.onerror = (error) => {
     console.error('WebSocket错误:', error)
+    thinking.value = false
     ElMessage.error('连接失败，请刷新页面重试')
   }
 

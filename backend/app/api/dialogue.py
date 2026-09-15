@@ -106,13 +106,15 @@ async def start_dialogue(
     session.ai_service = ai_service
     session.model_name = ai_service.model
 
-    # 构建产品信息文本
+    # 构建产品信息文本（含详细条款，供AI基于真实信息应答）
     product_info = f"""产品名称：{product.name}
 产品类型：{product.product_type}
 产品简介：{product.description}
 保障范围：{product.coverage}
 保费范围：{product.premium_range}
-适用人群：{product.target_audience}"""
+适用人群：{product.target_audience}
+【详细产品资料（销售应基于此介绍，客户问题围绕此展开）】
+{product.detailed_info or '暂无'}"""
 
     # 生成AI首次问候
     try:
@@ -175,10 +177,13 @@ async def websocket_dialogue(websocket: WebSocket, session_id: str):
 
                 # 获取角色和产品信息（从会话中获取）
                 role_prompt = session.role_data.get("system_prompt", "")
+                product_detail = session.product_data.get("detailed_info") or ""
                 product_info = f"""产品名称：{session.product_data.get("name")}
 产品简介：{session.product_data.get("description")}
 保障范围：{session.product_data.get("coverage")}
-保费范围：{session.product_data.get("premium_range")}"""
+保费范围：{session.product_data.get("premium_range")}
+【详细产品资料】
+{product_detail}"""
 
                 # 生成AI回复
                 try:
@@ -199,14 +204,23 @@ async def websocket_dialogue(websocket: WebSocket, session_id: str):
                         "content": ai_reply
                     })
 
+                    # 客户挂断检测：AI回复带【挂断】标记时，通知前端并自动触发评分
+                    if "【挂断】" in ai_reply:
+                        await websocket.send_json({
+                            "type": "status",
+                            "status": "hung_up"
+                        })
+                        # 复用end流程：直接转入评分
+                        message_data["action"] = "end"
+
                 except Exception as e:
                     await websocket.send_json({
                         "type": "error",
                         "message": f"AI服务异常: {str(e)}"
                     })
 
-            elif action == "end":
-                # 结束对话，触发评分
+            if message_data.get("action") == "end":
+                # 结束对话，触发评分（用户主动结束或客户挂断）
                 print(f"[DEBUG] 收到结束对话请求, session_id={session_id}")
                 print(f"[DEBUG] 对话轮数: {len(session.dialogue_history)}")
 
@@ -233,6 +247,8 @@ async def websocket_dialogue(websocket: WebSocket, session_id: str):
                                 "prompt": dim.evaluation_prompt or dim.description
                             }
                         print(f"[DEBUG] 加载了{len(dimensions)}个评分维度")
+                        if not dimensions:
+                            raise ValueError("评分维度未配置，请先在管理后台配置评分维度")
                     finally:
                         await db.close()
 
@@ -272,6 +288,7 @@ async def websocket_dialogue(websocket: WebSocket, session_id: str):
                     import traceback
                     traceback.print_exc()
 
+                    # 评分失败也结束评分中状态，前端收到error会复位thinking并弹提示
                     await websocket.send_json({
                         "type": "error",
                         "message": f"评分失败: {str(e)}"

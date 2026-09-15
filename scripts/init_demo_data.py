@@ -12,16 +12,25 @@ sys.path.insert(0, str(BASE_DIR / "backend"))
 
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import AsyncSessionLocal, init_db
-from sqlalchemy import delete
+from sqlalchemy import delete, select
 from app.models.models import CustomerRole, InsuranceProduct, ScoringDimension
 
 
 async def init_demo_data():
-    """初始化演示数据"""
+    """初始化演示数据（幂等：已有同名数据则跳过）"""
     print("[INFO] 正在初始化数据库...")
     await init_db()
 
     async with AsyncSessionLocal() as session:
+        # 已有数据名称集合（幂等判重）
+        existing_roles = set(
+            r.name for r in
+            (await session.execute(select(CustomerRole))).scalars().all()
+        )
+        existing_products = set(
+            p.name for p in
+            (await session.execute(select(InsuranceProduct))).scalars().all()
+        )
         # ============ 创建客户角色 ============
         print("[INFO] 创建客户角色...")
 
@@ -163,7 +172,10 @@ async def init_demo_data():
         ]
 
         for role in roles:
-            session.add(role)
+            if role.name not in existing_roles:
+                session.add(role)
+            else:
+                print(f"  [SKIP] 角色已存在: {role.name}")
 
         print(f"   [OK] 创建了 {len(roles)} 个客户角色")
 
@@ -251,7 +263,10 @@ async def init_demo_data():
         ]
 
         for product in products:
-            session.add(product)
+            if product.name not in existing_products:
+                session.add(product)
+            else:
+                print(f"  [SKIP] 产品已存在: {product.name}")
 
         print(f"   [OK] 创建了 {len(products)} 个保险产品")
 
