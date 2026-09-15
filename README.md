@@ -1,22 +1,24 @@
-# 保险销售智能陪练系统 V0.2.2
+# 保险销售智能陪练系统 V0.3.0
 
-> AI驱动的保险销售能力提升平台
+> AI驱动的保险销售能力提升平台 —— 真实产品、有情绪的客户、严格的考官
 
 ## 项目简介
 
 本项目是一个面向保险销售人员的AI智能陪练系统，通过模拟真实客户对话场景，帮助销售人员提升沟通能力、产品知识和营销技巧，并提供AI驱动的多维度能力评估。
 
-> 📚 **文档中心**: 查看完整文档请访问 [docs/README.md](docs/README.md)
+在线演示：https://insurance.hipigod.top
 
 ### 核心功能
 
-- 🤖 **AI对话练习**：智能模拟5种真实客户类型，提供接近真实的沟通体验
-- 📊 **多维度评分**：从沟通能力、有效营销、产品熟练度、异议处理4个维度评估
-- 🎯 **异议识别**：自动识别价格、信任、需求、竞品等异议类型
+- 🤖 **AI对话练习**：7种情绪化客户角色（各有家庭背景、喜好厌恶、耐心阈值），反应接近真人
+- 📞 **客户挂断机制**：连续敷衍或误导3次，客户会表达不满并挂断，自动转入评分
+- 📊 **多维度严格评分**：需求挖掘、产品说明、异议处理、促成能力4维度，五档锚点定档+一票否决（编造产品信息0-20分、被挂断促成≤30分）
+- 🔧 **多模型管理**：管理后台配置多个大模型（落盘服务器配置文件），开始练习时自由选择，支持连通性测试
+- 📋 **真实产品资料**：内置2026年在售产品数据（小状元2号教育金/达尔文11号重疾/蓝医保百万医疗/定海柱8号定寿），客户问题围绕真实条款展开
+- 🗂️ **练习历史服务端存储**：评分自动落库，跨设备、清缓存不丢失
 - 💡 **优秀案例对比**：针对薄弱环节推送标准话术参考
-- ⚙️ **管理后台**：完整的角色、产品、评分维度、案例管理系统
-- 🐳 **Docker支持**：一键部署，开箱即用，环境隔离
-- 📦 **预设数据**：内置完整的演示数据，无需手动配置
+- ⚙️ **管理后台**：角色、产品、评分维度、案例、模型配置一站式管理
+- 🐳 **Docker部署**：一键编排，含低内存环境适配方案
 
 ### 技术栈
 
@@ -24,18 +26,13 @@
 - FastAPI - 现代异步Web框架
 - SQLite - 轻量级数据库
 - WebSocket - 实时双向通信
-- OpenAI SDK - 兼容国产大模型API
+- OpenAI SDK - 兼容国产大模型API（DeepSeek/通义千问等）
 
 **前端**：
-- Vue 3 - 渐进式前端框架
-- Vite - 快速构建工具
-- Element Plus - UI组件库
-- Pinia - 状态管理
+- Vue 3 + Vite + Element Plus + Pinia
 
 **部署**：
-- Docker - 容器化部署
-- Docker Compose - 多容器编排
-- Nginx - 反向代理和静态文件服务
+- Docker + Docker Compose + Nginx
 
 ---
 
@@ -43,15 +40,11 @@
 
 ### 部署方式选择
 
-本项目支持两种部署方式：
-
 #### 🐳 方式一：Docker 部署（推荐）
 
-**优点**：一键部署、环境隔离、跨平台、开箱即用
-
 **环境要求**：
-- Docker Desktop 已安装并运行
-- 国产大模型 API Key（推荐 DeepSeek）
+- Docker 已安装并运行
+- 兼容 OpenAI API 的大模型 API Key（推荐 DeepSeek）
 
 **快速启动**：
 ```bash
@@ -59,320 +52,157 @@
 git clone https://github.com/hipigod/insurance-QA-system.git
 cd insurance-QA-system
 
-# 2. 配置环境变量
-cp .env.example .env
-# 编辑 .env 文件，填入您的 MODEL_API_KEY
-
-# 3. 一键启动
+# 2. 启动（.env 仅需保留对话参数，模型在管理后台配置）
 docker compose up -d
 
-# 4. 初始化预设数据（首次运行）
-docker exec insurance-backend python init_demo_data.py
+# 3. 初始化预设数据（首次运行，幂等可重复执行）
+docker exec insurance-backend sh -c "cd /app && PYTHONPATH=/app python /tmp/init.py" 2>/dev/null || \
+docker cp scripts/init_demo_data.py insurance-backend:/tmp/ && \
+docker exec insurance-backend sh -c "cd /app && PYTHONPATH=/app python /tmp/init_demo_data.py"
+
+# 4. 内容调优（真实产品/情绪角色/严格评分维度，幂等）
+docker cp scripts/tune_content.py insurance-backend:/tmp/ && \
+docker exec insurance-backend sh -c "cd /app && PYTHONPATH=/app python /tmp/tune_content.py"
+
+# 5. 打开系统 → 管理后台 → 模型管理 → 添加模型（API Key + 接口地址）
 ```
 
 **访问地址**：
 - 前端：http://localhost
-- 后端 API：http://localhost:8000/docs
+- 后端 API 文档：http://localhost:8000/docs
 
-**常用命令**：
-```bash
-# 查看容器状态
-docker ps
-
-# 查看日志
-docker logs insurance-backend
-docker logs insurance-frontend
-
-# 停止服务
-docker compose down
-
-# 重启服务
-docker compose restart
-```
+**低内存服务器注意**（≤2G）：
+前端镜像采用预构建模式（本地 `npm run build` 后将 `dist/` 同步到服务器再构建镜像），避免容器内 `npm ci` OOM。资源充足环境可使用 `frontend/Dockerfile.build` 在容器内完成构建。
 
 #### 💻 方式二：本地开发模式
 
-**优点**：便于调试、修改代码实时生效
-
-**环境要求**：
-
-- Python 3.9+
-- Node.js 16+
-- 国产大模型API Key（推荐DeepSeek）
-
-**安装步骤**
-
-#### 1. 克隆项目
+**环境要求**：Python 3.9+、Node.js 16+
 
 ```bash
-git clone <your-repo-url>
-cd Insurance Q&A System
-```
-
-#### 2. 后端设置
-
-```bash
-# 进入后端目录
+# 后端
 cd backend
-
-# 创建虚拟环境（推荐）
-python -m venv venv
-
-# 激活虚拟环境
-# Windows:
-venv\Scripts\activate
-# Linux/Mac:
-source venv/bin/activate
-
-# 安装依赖
+python -m venv venv && source venv/bin/activate  # Windows: venv\Scripts\activate
 pip install -r requirements.txt
+python main.py          # http://127.0.0.1:8000
 
-# 配置环境变量
-cp .env.example .env
-# 编辑 .env 文件，填入您的 API_KEY
-```
-
-#### 3. 前端设置
-
-```bash
-# 打开新终端，进入前端目录
+# 前端（新终端）
 cd frontend
-
-# 安装依赖
 npm install
+npm run dev             # http://localhost:5173
 ```
 
-#### 4. 初始化数据库
-
-```bash
-# 在后端目录执行
-cd backend
-python -c "from app.core.database import init_db; import asyncio; asyncio.run(init_db())"
-```
-
-#### 5. 启动项目
-
-**启动后端**（在backend目录）：
-```bash
-python main.py
-```
-
-后端将运行在：http://127.0.0.1:8000
-
-**启动前端**（在frontend目录）：
-```bash
-npm run dev
-```
-
-前端将运行在：http://localhost:5173
-
----
-
-## 目录结构
-
-```
-Insurance Q&A System/
-├── backend/                 # 后端代码
-│   ├── app/
-│   │   ├── api/            # API路由
-│   │   ├── core/           # 核心配置
-│   │   ├── models/         # 数据模型
-│   │   ├── services/       # 业务服务
-│   │   └── utils/          # 工具函数
-│   ├── data/               # 数据库文件（自动生成）
-│   ├── main.py             # 应用入口
-│   ├── Dockerfile          # Docker镜像构建
-│   └── requirements.txt    # Python依赖
-│
-├── frontend/               # 前端代码
-│   ├── src/
-│   │   ├── api/           # API接口
-│   │   ├── components/    # 公共组件
-│   │   ├── router/        # 路由配置
-│   │   ├── stores/        # 状态管理
-│   │   ├── utils/         # 工具函数
-│   │   ├── views/         # 页面视图
-│   │   ├── App.vue        # 根组件
-│   │   └── main.js        # 入口文件
-│   ├── package.json       # 依赖配置
-│   ├── vite.config.js     # Vite配置
-│   ├── Dockerfile         # Docker镜像构建
-│   └── nginx.conf         # Nginx配置
-│
-├── scripts/               # 工具脚本
-│   └── init_demo_data.py  # 数据初始化脚本
-│
-├── docs/                   # 文档目录
-├── docker-compose.yml      # Docker编排配置
-├── .env.example            # 环境变量模板
-├── .gitignore              # Git忽略文件
-└── README.md               # 项目说明
-```
+启动后进入 管理后台 → 模型管理 添加大模型配置。
 
 ---
 
 ## 配置说明
 
-### 后端配置（.env）
+### 大模型配置（重要变更）
+
+自 V0.3.0 起，大模型不再通过环境变量配置。启动系统后在 **管理后台 → 模型管理** 中添加：
+- 模型名称（如 deepseek-chat / qwen-plus）
+- 提供商
+- API Key（保存后仅显示掩码，编辑留空表示沿用）
+- API 地址（如 https://api.deepseek.com/v1）
+
+模型配置持久化于服务器 `data/model_config.json`，支持多模型并存、启用禁用、连通性测试。开始对话练习时自由选择。
+
+### 对话参数（.env）
 
 ```env
-# AI模型配置 - DeepSeek(推荐)
-DEFAULT_MODEL=deepseek-chat
-MODEL_API_KEY=your_deepseek_api_key_here
-MODEL_API_BASE=https://api.deepseek.com/v1
-
-# 如果使用通义千问,取消下面的注释并注释掉上面的配置
-# DEFAULT_MODEL=qwen-plus
-# MODEL_API_KEY=your_qwen_api_key_here
-# MODEL_API_BASE=https://dashscope.aliyuncs.com/compatible-mode/v1
-
-# 对话配置
-AI_RESPONSE_TIMEOUT=25  # AI响应超时时间(秒)
+AI_RESPONSE_TIMEOUT=25  # AI响应超时(秒)
 AI_TEMPERATURE=0.7      # AI创意度(0-1)
+MAX_DIALOGUE_ROUNDS=20  # 最大对话轮次
 ```
-
-**重要提示**：
-1. 首次使用需要配置有效的API Key
-2. 推荐使用DeepSeek（免费额度大、响应快）
-3. 修改.env后需要重启后端服务才能生效
-
-### 前端配置
-
-前端代理配置已设置在 `vite.config.js`，默认代理后端的 `/api` 和 `/ws` 路径。
 
 ---
 
 ## 使用指南
 
 ### 1. 选择场景
+选择客户角色（7种：小白/理性分析/价格敏感/怀疑抗拒/犹豫/懂行/难缠）、保险产品、对话模型。
 
-- 从角色列表选择一个客户角色（小白客户、懂行客户、难缠客户等）
-- 从产品列表选择一个保险产品
+### 2. 对话练习
+- AI客户主动打招呼，带有角色情绪与偏好
+- 客户会围绕真实产品条款提问、比价、质疑
+- **注意**：敷衍、答非所问、编造信息会消耗客户耐心，累计3次将被挂断
+- 全程对话历史参与情绪记忆，长对话下客户的耐心是持续累计的
 
-### 2. 开始对话
+### 3. 评分报告
+- 结束对话（或被挂断）后自动评分
+- 五档锚点严格评分：乱答会被打回原形（实测瞎答总分个位数）
+- 一票否决：编造产品信息、被客户挂断均有对应维度严惩
+- 每个维度的评价引用对话原文佐证
 
-- AI客户会主动打招呼
-- 输入您的回复进行对话练习
-- 可随时结束对话
-
-### 3. 查看评分
-
-- 结束对话后系统会自动评分
-- 查看各维度得分和评价
-- 学习优秀案例对比
-
-### 4. 历史记录
-
-- 系统会自动保存最近10次练习记录
-- 可随时查看历史练习详情
-
----
-
-## API文档
-
-启动后端后，访问：http://127.0.0.1:8000/docs
+### 4. 练习历史
+- 评分结果与完整对话自动保存到服务端数据库
+- 跨设备访问、清浏览器缓存不影响历史记录
 
 ---
 
 ## 常见问题
 
-### Q: Docker部署后如何初始化预设数据？
-
-A: 首次启动Docker容器后，运行以下命令初始化预设数据：
-```bash
-docker exec insurance-backend python init_demo_data.py
-```
-
-这会自动创建：
-- 5个客户角色（小白客户、懂行客户、难缠客户、犹豫客户等）
-- 3个保险产品（重疾险、医疗险、寿险）
-- 4个评分维度（沟通能力、有效营销、产品熟练度、异议处理）
-
-### Q: 如何获取AI模型的API Key？
-
-A: 本项目推荐使用DeepSeek，访问 https://platform.deepseek.com/ 注册并获取API Key。
-
-### Q: 支持哪些国产大模型？
-
-A: 支持所有兼容OpenAI API格式的国产大模型，如：
-- **DeepSeek**（推荐） - 响应快、免费额度大
-- 智谱AI (ChatGLM)
-- 百度文心一言
-- 阿里通义千问
-- 月之暗面 (Kimi)
-- 等等
-
-配置方法：编辑 `backend/.env` 文件中的相关配置
+### Q: 如何获取大模型 API Key？
+A: 推荐 DeepSeek（https://platform.deepseek.com/），也支持所有兼容 OpenAI API 的国产大模型（通义千问、智谱、Kimi 等）。
 
 ### Q: 数据存储在哪里？
-
-A: **Docker部署模式**：
-- 使用Docker命名卷 `backend-data` 持久化数据库
-- 数据存储路径：`/app/data/insurance_practice.db` (容器内)
-- 对话记录：浏览器LocalStorage（前端）
-
-**本地开发模式**：
-- 所有数据都存储在本地
-- 对话记录：浏览器LocalStorage（前端）
-- 角色配置：SQLite数据库（后端data目录）
-- 产品信息：SQLite数据库（后端data目录）
-- 评分记录：浏览器LocalStorage（前端）
-
-**注意**：清除浏览器数据会导致对话记录丢失，请注意备份。
-
-### Q: Docker容器数据会丢失吗？
-
-A: 不会。本项目使用Docker命名卷（`backend-data`）来持久化数据库数据。即使容器被删除，数据也会保留。如需完全清理数据：
-```bash
-# 停止并删除容器和卷
-docker compose down -v
-```
+A: 角色配置、产品信息、评分维度、练习记录均存储于 SQLite 数据库（Docker 命名卷 `backend-data` 持久化）；模型配置存储于 `data/model_config.json`。练习历史在服务端，与浏览器缓存无关。
 
 ### Q: 如何自定义角色和产品？
+A: 管理后台支持增删改查。修改后立即生效，无需重启。
 
-A: 通过管理后台界面：
-1. 点击首页右上角"管理后台"按钮
-2. 在相应标签页进行增删改查操作
-3. 支持自定义角色、产品、评分维度、优秀案例
+### Q: 客户挂断是怎么回事？
+A: 每个角色有耐心设定，销售人员连续出现敷衍、答非所问、编造信息、强行催单等行为，客户会逐渐不满并最终挂断结束对话。挂断后自动评分，促成能力维度会被重罚。这是陪练的核心压力设计。
 
 ---
 
 ## 版本历史
 
+### V0.3.0 (2026-09-15)
+
+**模型管理重构**
+- 🗑️ 移除内置默认模型（.env底座配置），模型统一在管理后台配置
+- 💾 模型配置落盘 `data/model_config.json`（原子写入，旧DB配置自动迁移）
+- 🔀 多模型并存，开始练习时自由选择，会话绑定模型全程使用
+- 🔌 新增模型连通性测试，API Key 掩码回显（留空编辑表示沿用）
+
+**练习历史修复**
+- 🐛 修复生产环境 WebSocket 地址写死 127.0.0.1 导致对话评分链路全断
+- 🐛 修复评分后记录不落库（此前仅存浏览器 localStorage 且只保留10条）
+- 📦 记录改存服务端 SQLite，跨设备不丢失
+
+**稳定性**
+- 🐛 修复推理型模型评分卡死（思考耗尽token致空回复）：max_tokens 8000/超时120s/空返回分类报错
+- 🐛 修复评分 JSON 解析过脆：代码块+大括号双定位稳健提取
+- 🐛 修复长对话客户失忆：对话历史窗口从5条放开为全量
+
+**内容全面调优**
+- 📋 产品换真实在售数据：小状元2号教育金/达尔文11号重疾/蓝医保百万医疗/定海柱8号定寿
+- 😤 7个角色情绪化重写：家庭背景、喜好厌恶、耐心挂断规则
+- 📏 评分严格化：五档锚点+一票否决，乱答总分个位数
+- 🐛 修复详细产品资料未传给AI的问题
+
+**部署适配**
+- 🐳 前端预构建镜像模式（低内存服务器适配），原方案保留为 Dockerfile.build
+- 🔧 init 脚本幂等化（同名跳过），杜绝重复灌数据
+- 🔒 backend/.dockerignore 排除本地数据库防污染镜像
+
 ### V0.2.2 (2026-01-07)
-- 🐳 **Docker部署优化**：修复Docker容器数据库初始化问题
-- ✅ **一键部署**：添加完整的Docker Compose配置
-- 📦 **预设数据**：提供数据初始化脚本，包含5个角色、3个产品、4个评分维度
-- 🔧 **配置优化**：简化数据库连接配置，提升容器稳定性
-- 📝 **文档更新**：添加Docker部署文档和快速启动指南
+- 🐳 Docker部署优化、一键部署、预设数据、配置简化
 
 ### V0.2.1 (2025-12-31)
-- 🐛 **修复评分跳转Bug**: 修复对话结束后无法跳转到结果页面的问题
-- ⚡ **优化超时配置**: 评分超时从15秒增加到30秒,确保复杂对话能正常评分
-- 🔍 **添加调试日志**: 完整的评分流程日志,便于问题排查
-- ✅ **测试验证**: 通过多轮测试验证AI对话、评分、跳转全流程正常
-- 📝 **改进错误处理**: 更友好的错误提示和异常处理机制
+- 🐛 修复评分跳转Bug、超时配置、调试日志
 
 ### V0.2.0 (2025-12-31)
-- ✅ **新增管理后台**：完整的角色、产品、评分维度、案例管理功能
-- ✅ **优化超时配置**：前端30秒/后端25秒,避免AI响应超时
-- ✅ **修复数据加载**：修复管理后台数据不显示问题
-- ✅ **改进错误处理**：更友好的错误提示和异常处理
-- ✅ **性能优化**：AI连接测试通过,响应速度<5秒
-- ✅ **配置优化**：支持多种国产大模型配置切换
+- ✅ 管理后台、超时优化、错误处理改进
 
 ### V1.2.0 (2025-12-30)
-- ✅ 实现WebSocket实时对话
-- ✅ 实现多维度AI评分
-- ✅ 实现异议类型识别
-- ✅ 实现优秀案例对比
-- ✅ 移动端适配优化
+- ✅ WebSocket实时对话、多维度AI评分、异议识别、优秀案例对比
 
 ### 计划功能
-- ⏳ 产品文档自动解析
-- ⏳ 语音对话功能
-- ⏳ 数据导出功能
-- ⏳ 用户系统
+- ⏳ 语音对话
+- ⏳ 练习数据导出与统计分析
+- ⏳ 用户系统与团队管理
 
 ---
 
@@ -388,10 +218,4 @@ MIT License
 
 ---
 
-## 联系方式
-
-如有问题，请提交Issue或联系项目维护者。
-
----
-
-**🚀 立即开始，提升您的保险销售能力！**
+**🚀 立即开始，在真实压力下提升您的保险销售能力！**
