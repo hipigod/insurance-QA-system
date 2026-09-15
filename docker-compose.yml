@@ -48,7 +48,8 @@ services:
       dockerfile: Dockerfile
     container_name: insurance-frontend
     ports:
-      - "80:80"
+      # 宝塔nginx反代占用80，容器前端走8081
+      - "8081:80"
     depends_on:
       backend:
         condition: service_healthy
